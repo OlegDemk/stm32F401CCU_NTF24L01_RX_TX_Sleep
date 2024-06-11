@@ -1,0 +1,17 @@
+../Core/Src/main.c:67:6:led_test_blink	2
+../Core/Src/main.c:80:6:error_blink_red_led	1
+../Core/Src/main.c:149:8:user_i2c_read	3
+../Core/Src/main.c:157:6:user_delay_ms	1
+../Core/Src/main.c:162:8:user_i2c_write	2
+../Core/Src/main.c:175:6:init_bme280_	3
+../Core/Src/main.c:210:6:get_THP_bme280	3
+../Core/Src/main.c:230:6:meassure_battery_voltage	1
+../Core/Src/main.c:258:5:main	7
+../Core/Src/main.c:557:6:SystemClock_Config	3
+../Core/Src/main.c:605:13:MX_ADC1_Init	3
+../Core/Src/main.c:657:13:MX_I2C1_Init	2
+../Core/Src/main.c:691:13:MX_RTC_Init	5
+../Core/Src/main.c:761:13:MX_SPI2_Init	2
+../Core/Src/main.c:799:13:MX_USART1_UART_Init	2
+../Core/Src/main.c:832:13:MX_GPIO_Init	1
+../Core/Src/main.c:884:6:Error_Handler	1

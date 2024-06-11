@@ -1,0 +1,12 @@
+../Core/Src/main.c:65:6:led_test_blink	2
+../Core/Src/main.c:78:6:error_blink_red_led	1
+../Core/Src/main.c:267:5:main	1
+../Core/Src/main.c:481:6:SystemClock_Config	3
+../Core/Src/main.c:529:13:MX_ADC1_Init	3
+../Core/Src/main.c:581:13:MX_I2C1_Init	2
+../Core/Src/main.c:615:13:MX_RTC_Init	5
+../Core/Src/main.c:685:13:MX_SPI2_Init	2
+../Core/Src/main.c:723:13:MX_USART1_UART_Init	2
+../Core/Src/main.c:756:13:MX_GPIO_Init	1
+../Core/Src/main.c:813:6:HAL_GPIO_EXTI_Callback	2
+../Core/Src/main.c:834:6:Error_Handler	1

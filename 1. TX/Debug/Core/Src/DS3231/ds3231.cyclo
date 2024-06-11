@@ -1,0 +1,17 @@
+../Core/Src/DS3231/ds3231.c:50:6:test_writr	1
+../Core/Src/DS3231/ds3231.c:59:6:time_i2c_write_single	1
+../Core/Src/DS3231/ds3231.c:67:6:time_i2c_write_multi	1
+../Core/Src/DS3231/ds3231.c:73:6:time_i2c_read_single	1
+../Core/Src/DS3231/ds3231.c:80:6:time_i2c_read_multi	1
+../Core/Src/DS3231/ds3231.c:86:6:ds3231_I2C_init	1
+../Core/Src/DS3231/ds3231.c:96:6:ds3231_init	4
+../Core/Src/DS3231/ds3231.c:109:9:ds3231_run_command	3
+../Core/Src/DS3231/ds3231.c:129:9:ds3231_run_status	2
+../Core/Src/DS3231/ds3231.c:139:9:ds3231_init_status_report	2
+../Core/Src/DS3231/ds3231.c:149:6:ds3231_init_status_update	1
+../Core/Src/DS3231/ds3231.c:157:6:ds3231_reset	16
+../Core/Src/DS3231/ds3231.c:241:9:ds3231_read	12
+../Core/Src/DS3231/ds3231.c:302:9:ds3231_set	12
+../Core/Src/DS3231/ds3231.c:367:13:ds3231_data_clone	8
+../Core/Src/DS3231/ds3231.c:395:13:BCD_to_HEX	2
+../Core/Src/DS3231/ds3231.c:404:13:HEX_to_BCD	3
