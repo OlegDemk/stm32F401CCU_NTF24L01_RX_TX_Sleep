@@ -21,15 +21,9 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-#include "BME280/bme280_defs.h"
-#include "BME280/bme280.h"
 
 #include "nrf24L01/nrf24L01.h"
-
-#include "DS3231/ds3231.h"
-
 #include "stm32f4xx_hal.h"
-
 #include "stm32f4xx_hal_gpio.h"
 /* USER CODE END Includes */
 
@@ -42,52 +36,6 @@
 /* USER CODE BEGIN PD */
 #define ON 1
 #define OFF 0
-
-#define TX_MODE OFF
-
-#define RED_LED_ON HAL_GPIO_WritePin(GPIOB, LED_Red_Pin, GPIO_PIN_SET)
-#define RED_LED_OFF HAL_GPIO_WritePin(GPIOB, LED_Red_Pin, GPIO_PIN_RESET)
-#define RED_LED_TOGLE HAL_GPIO_TogglePin(GPIOB, LED_Red_Pin)
-
-#define GREEN_LED_ON HAL_GPIO_WritePin(GPIOB, LED_Green_Pin, GPIO_PIN_SET)
-#define GREEN_LED_OFF HAL_GPIO_WritePin(GPIOB, LED_Green_Pin, GPIO_PIN_RESET)
-#define GREEN_LED_TOGLE HAL_GPIO_TogglePin(GPIOB, LED_Green_Pin)
-
-
-// Set wakeUp time
-const float  Wake_up_Time_Base = 16.0f/32000.0f;     //0.0005 s
-const int WakeUpCounter_1_sec = 1/Wake_up_Time_Base;
-const int WakeUpCounter_5_sec = 5/Wake_up_Time_Base;
-const int WakeUpCounter_10_sec = 10/Wake_up_Time_Base;
-
-
-// --------------------------------------------------------------------------------------
-void led_test_blink(void)
-{
-	for(int i = 0; i <= 5; i++)
-	{
-		RED_LED_ON;
-		GREEN_LED_ON;
-		HAL_Delay(100);
-		RED_LED_OFF;
-		GREEN_LED_OFF;
-		HAL_Delay(100);
-	}
-}
-// --------------------------------------------------------------------------------------
-void error_blink_red_led(void)
-{
-	while(1)
-	{
-		RED_LED_TOGLE;
-		HAL_Delay(100);
-	}
-}
-// --------------------------------------------------------------------------------------
-////////////////////////////////////////////////////////////////////////////
-
-
-
 
 // Define wake up period
 
@@ -105,10 +53,6 @@ void error_blink_red_led(void)
 /* Private variables ---------------------------------------------------------*/
 ADC_HandleTypeDef hadc1;
 
-I2C_HandleTypeDef hi2c1;
-
-RTC_HandleTypeDef hrtc;
-
 SPI_HandleTypeDef hspi2;
 
 UART_HandleTypeDef huart1;
@@ -120,8 +64,6 @@ UART_HandleTypeDef huart1;
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
-static void MX_RTC_Init(void);
-static void MX_I2C1_Init(void);
 static void MX_USART1_UART_Init(void);
 static void MX_SPI2_Init(void);
 static void MX_ADC1_Init(void);
@@ -132,130 +74,6 @@ static void MX_ADC1_Init(void);
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
 
-
-//
-//void led_test(void)
-//{
-//
-//}
-
-
-// BME280 part /////////////////////////////////////////////////////////////////////////////////////
-
-#if TX_MODE
-	struct bme280_dev dev;
-	struct bme280_data comp_data;
-//	int8_t rslt;
-
-	int8_t init_bme280(void);
-	void bme280_measure(void);
-
-	//----------------------------------------------------------------------------------------
-	int8_t user_i2c_read(uint8_t id, uint8_t reg_addr, uint8_t *data, uint16_t len)
-	{
-	  if(HAL_I2C_Master_Transmit(&hi2c1, (id << 1), &reg_addr, 1, 10) != HAL_OK) return -1;
-	  if(HAL_I2C_Master_Receive(&hi2c1, (id << 1) | 0x01, data, len, 10) != HAL_OK) return -1;
-
-	  return 0;
-	}
-	//----------------------------------------------------------------------------------------
-	void user_delay_ms(uint32_t period)
-	{
-	  HAL_Delay(period);
-	}
-	//----------------------------------------------------------------------------------------
-	int8_t user_i2c_write(uint8_t id, uint8_t reg_addr, uint8_t *data, uint16_t len)
-	{
-	  int8_t *buf;
-	  buf = malloc(len +1);
-	  buf[0] = reg_addr;
-	  memcpy(buf +1, data, len);
-
-	  if(HAL_I2C_Master_Transmit(&hi2c1, (id << 1), (uint8_t*)buf, len + 1, HAL_MAX_DELAY) != HAL_OK) return -1;
-
-	  free(buf);
-	  return 0;
-	}
-	//----------------------------------------------------------------------------------------
-	void init_bme280_(void)
-	{
-		 uint16_t STATUS=0;
-		 uint16_t addres_device = 0x76;  		 		// BME280
-		 uint16_t id_addr = 0xD0;
-		 uint8_t id = 96;								// in hex form
-		 uint8_t buff=0;        						// Return 0x96 -> Dec 60
-		 int8_t rslt;
-
-		 	  // For debug
-		 STATUS = HAL_I2C_Mem_Read(&hi2c1, addres_device<<1, id_addr, 1, &buff, 1, 1000);
-		 if(!((buff == id) && (STATUS == 0)))
-		 {
-			 error_blink_red_led();
-		 }
-
-		 // Init BME280
-		 dev.dev_id = BME280_I2C_ADDR_PRIM;
-		 dev.intf = BME280_I2C_INTF;
-		 dev.read = user_i2c_read;
-		 dev.write = user_i2c_write;
-		 dev.delay_ms = user_delay_ms;
-
-		 rslt = bme280_init(&dev);
-
-		 dev.settings.osr_h = BME280_OVERSAMPLING_1X;
-		 dev.settings.osr_p = BME280_OVERSAMPLING_16X;
-		 dev.settings.osr_t = BME280_OVERSAMPLING_2X;
-		 dev.settings.filter = BME280_FILTER_COEFF_16;
-		 rslt = bme280_set_sensor_settings(BME280_OSR_PRESS_SEL | BME280_OSR_TEMP_SEL | BME280_OSR_HUM_SEL | BME280_FILTER_SEL, &dev);
-
-		 rslt = bme280_set_sensor_mode(BME280_NORMAL_MODE, &dev);
-
-		 dev.delay_ms(40);
-	}
-	//----------------------------------------------------------------------------------------
-	void get_THP_bme280(float *T, float *H, float *P)
-	{
-		if(bme280_get_sensor_data(BME280_ALL, &comp_data, &dev) == BME280_OK)
-		{
-			// Save data variables
-			*T = (float)comp_data.temperature;
-			*H = (float)comp_data.humidity;
-			*P = (float)comp_data.pressure;
-		}
-		else
-		{
-			error_blink_red_led();
-		}
-
-		if(put_device_to_sleep(&dev) != 0)
-		{
-			error_blink_red_led();
-		}
-	}
-
-// --------------------------------------------------------------------------------
-	void meassure_battery_voltage(float *voltage)
-	{
-		uint16_t i = 0;
-		char str[35]={0};
-
-		HAL_ADC_Start(&hadc1);
-		HAL_ADC_PollForConversion(&hadc1, 100);
-//		i = (uint32_t)HAL_ADC_GetValue(&hadc1);
-		HAL_ADC_Stop(&hadc1);
-
-		float V_bat = (float)HAL_ADC_GetValue(&hadc1)*3.3/4096;
-
-		*voltage = V_bat;
-
-//		sprintf(str, "ADC: %04d V_bat: %.2f V \n\r", i, V_bat);
-//		HAL_UART_Transmit(&huart1, str, sizeof(str), 1000);
-
-	}
-// --------------------------------------------------------------------------------
-
-#endif
-// End BME280 part/////////////////////////////////////////////////////////////////////////////////////
 
 
 /* USER CODE END 0 */
@@ -288,184 +106,20 @@ int main(void)
 
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
-  MX_RTC_Init();
-  MX_I2C1_Init();
   MX_USART1_UART_Init();
   MX_SPI2_Init();
   MX_ADC1_Init();
   /* USER CODE BEGIN 2 */
 
-
-
-
-
-#if TX_MODE
-
-  ////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-  if (__HAL_PWR_GET_FLAG(PWR_FLAG_SB) != RESET)
-   {
- 	  __HAL_PWR_CLEAR_FLAG(PWR_FLAG_SB);  // clear the flag
-
-// 	 led_test_blink();
-
- 	 float BME280_temperature = 0;
- 	 float BME280_humidity = 0;
- 	 float BME280_preasure = 0;
-
- 	 float battery_voltage = 0;
-
- 	 init_bme280_();
-
- 	 get_THP_bme280(&BME280_temperature, &BME280_humidity, &BME280_preasure);
-
- 	  //  Prepare string of data
- 	  uint8_t num_of_dev = 1;
- 	  char tramsmeet_data_buffer[40] = {0,};
-
- 	  char buf[10] = {0,};
- 	  sprintf(buf, "D:%d ", num_of_dev);
- 	  strcat(tramsmeet_data_buffer, buf);
-
- 	  memset(buf, 0, sizeof(buf));
- 	  sprintf(buf, "T%.1f ", BME280_temperature);
- 	  strcat(tramsmeet_data_buffer, buf);
-
- 	  memset(buf, 0, sizeof(buf));
- 	  sprintf(buf, "H%.1f ", BME280_humidity);
- 	  strcat(tramsmeet_data_buffer, buf);
-
-
- 	  // Meassure voltage on battery
- 	  meassure_battery_voltage(&battery_voltage);
- 	  memset(buf, 0, sizeof(buf));
- 	  sprintf(buf, "V%.1f ", battery_voltage);
- 	  strcat(tramsmeet_data_buffer, buf);
-
-
- 	  // DS3231 clock
- 	  uint8_t buffer = 0;
- 	  uint8_t time_ds3231[10] = {0,};
-
- 	  for(int i = 0; i <=8; i++)
- 	  {
- 		  ds3231_read(i, &buffer);
- 		  time_ds3231[i] = buffer;
- 	  }
-
-
- 	  // convert into string
- 	  char buf_1[5] = {0,};
-
- 	  for(int i = 2; i >= 0 ; i--)
- 	  {
- 		  sprintf(buf_1, "%d", time_ds3231[i]);
- 		  strcat(tramsmeet_data_buffer, buf_1);
- 		  memset(buf_1, 0, sizeof(buf_1));
- 		  if(i > 0)
- 		  {
- 			  strcat(tramsmeet_data_buffer, ":");
- 		  }
- 	  }
- 	  strcat(tramsmeet_data_buffer, "\n\r");
- 	  //
-
- 	  HAL_UART_Transmit(&huart1, tramsmeet_data_buffer, sizeof(tramsmeet_data_buffer), 1000);
-
-
- 	   	NRF24_init_TX(0, 10, 0, 15, 0, 0);
- 	 //  	// testReadWriteSetingd();
-
-// 	    1. Розібрати�?ь з глюком зави�?анн�? при передачі даних
-//		2. Збільшити кількі�?ть передачі даних з 32 байт
-
- 	   	NRF24L01_Transmit(1, tramsmeet_data_buffer);
-
- 	   	NRF24_Sleep_mode();
-
- 	  /** Disable the WWAKEUP PIN **/
- 	  HAL_PWR_DisableWakeUpPin(PWR_WAKEUP_PIN1);  // disable PA0
-
- 	  /** Deactivate the RTC wakeup  **/
- 	  HAL_RTCEx_DeactivateWakeUpTimer(&hrtc);
-   }
-
-
-  /** Now enter the standby mode **/
-    /* Clear the WU FLAG */
-   __HAL_PWR_CLEAR_FLAG(PWR_FLAG_WU);
-
-    /* clear the RTC Wake UP (WU) flag */
-   __HAL_RTC_WAKEUPTIMER_CLEAR_FLAG(&hrtc, RTC_FLAG_WUTF);
-
-    /* Display the string */
-//   char *str = "About to enter the STANDBY MODE\n\n";
-//   HAL_UART_Transmit(&huart2, (uint8_t *)str, strlen (str), HAL_MAX_DELAY);
-
-    /* Blink the LED */
-//   for (int i=0; i<4; i++)
-//   {
-// 	  HAL_GPIO_TogglePin(GPIOC, LED_Pin);
-// 	  HAL_Delay(750);
-//   }
-
-
-
-    /* Enable the WAKEUP PIN */
-   HAL_PWR_EnableWakeUpPin(PWR_WAKEUP_PIN1);
-
-   /* enable the RTC Wakeup */
-     /*  RTC Wake-up Interrupt Generation:
-       Wake-up Time Base = (RTC_WAKEUPCLOCK_RTCCLK_DIV /(LSI))
-       ==> WakeUpCounter = Wake-up Time / Wake-up Time Base
-
-       To configure the wake up timer to 5s the WakeUpCounter is set to 0x2710:
-       RTC_WAKEUPCLOCK_RTCCLK_DIV = RTCCLK_Div16 = 16
-       Wake-up Time Base = 16 /(32KHz) = 0.0005 seconds
-       ==> WakeUpCounter = ~5s/0.0005s = 20000 = 0x2710
-
-        1/0.0005 = 2000 = 0x7D0
-
-
-     */
-   if (HAL_RTCEx_SetWakeUpTimer_IT(&hrtc, WakeUpCounter_1_sec, RTC_WAKEUPCLOCK_RTCCLK_DIV16) != HAL_OK)
-   {
-     Error_Handler();
-   }
-
-   /* Finally enter the standby mode */
-   HAL_PWR_EnterSTANDBYMode();
-
-#else
-
-
-
-
-   //////////////////// TX ///////////////////////
-//   NRF24_init_TX(0, 10, 0, 15, 0, 0);
-//   testReadWriteSetingd();
-   ///////////////////////////////////////////////
-
-   //////////////////// RX ///////////////////////
-   NRF24_init_RX(1,1,1,1,1,1,1,1,1);
-
-   ///////////////////////////////////////////////
-
-#endif
+  NRF24_init_RX(1,1,1,1,1,1,1,1,1);
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-	  //////////////////// TX ///////////////////////
-//	  NRF24L01_Transmit(1, "1234567890");
-//	  HAL_Delay(1000);
-	  ///////////////////////////////////////////////
+	 NRF24L01_Receive();
 
-	  //////////////////// RX ///////////////////////
-	   NRF24L01_Receive();
-	  ///////////////////////////////////////////////
 
     /* USER CODE END WHILE */
 
@@ -491,10 +145,9 @@ void SystemClock_Config(void)
   /** Initializes the RCC Oscillators according to the specified parameters
   * in the RCC_OscInitTypeDef structure.
   */
-  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSI|RCC_OSCILLATORTYPE_LSI;
+  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSI;
   RCC_OscInitStruct.HSIState = RCC_HSI_ON;
   RCC_OscInitStruct.HSICalibrationValue = RCC_HSICALIBRATION_DEFAULT;
-  RCC_OscInitStruct.LSIState = RCC_LSI_ON;
   RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
   RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSI;
   RCC_OscInitStruct.PLL.PLLM = 8;
@@ -570,110 +223,6 @@ static void MX_ADC1_Init(void)
   /* USER CODE BEGIN ADC1_Init 2 */
 
   /* USER CODE END ADC1_Init 2 */
-
-}
-
-/**
-  * @brief I2C1 Initialization Function
-  * @param None
-  * @retval None
-  */
-static void MX_I2C1_Init(void)
-{
-
-  /* USER CODE BEGIN I2C1_Init 0 */
-
-  /* USER CODE END I2C1_Init 0 */
-
-  /* USER CODE BEGIN I2C1_Init 1 */
-
-  /* USER CODE END I2C1_Init 1 */
-  hi2c1.Instance = I2C1;
-  hi2c1.Init.ClockSpeed = 100000;
-  hi2c1.Init.DutyCycle = I2C_DUTYCYCLE_2;
-  hi2c1.Init.OwnAddress1 = 0;
-  hi2c1.Init.AddressingMode = I2C_ADDRESSINGMODE_7BIT;
-  hi2c1.Init.DualAddressMode = I2C_DUALADDRESS_DISABLE;
-  hi2c1.Init.OwnAddress2 = 0;
-  hi2c1.Init.GeneralCallMode = I2C_GENERALCALL_DISABLE;
-  hi2c1.Init.NoStretchMode = I2C_NOSTRETCH_DISABLE;
-  if (HAL_I2C_Init(&hi2c1) != HAL_OK)
-  {
-    Error_Handler();
-  }
-  /* USER CODE BEGIN I2C1_Init 2 */
-
-  /* USER CODE END I2C1_Init 2 */
-
-}
-
-/**
-  * @brief RTC Initialization Function
-  * @param None
-  * @retval None
-  */
-static void MX_RTC_Init(void)
-{
-
-  /* USER CODE BEGIN RTC_Init 0 */
-
-  /* USER CODE END RTC_Init 0 */
-
-  RTC_TimeTypeDef sTime = {0};
-  RTC_DateTypeDef sDate = {0};
-
-  /* USER CODE BEGIN RTC_Init 1 */
-
-  /* USER CODE END RTC_Init 1 */
-
-  /** Initialize RTC Only
-  */
-  hrtc.Instance = RTC;
-  hrtc.Init.HourFormat = RTC_HOURFORMAT_24;
-  hrtc.Init.AsynchPrediv = 127;
-  hrtc.Init.SynchPrediv = 255;
-  hrtc.Init.OutPut = RTC_OUTPUT_DISABLE;
-  hrtc.Init.OutPutPolarity = RTC_OUTPUT_POLARITY_HIGH;
-  hrtc.Init.OutPutType = RTC_OUTPUT_TYPE_OPENDRAIN;
-  if (HAL_RTC_Init(&hrtc) != HAL_OK)
-  {
-    Error_Handler();
-  }
-
-  /* USER CODE BEGIN Check_RTC_BKUP */
-
-  /* USER CODE END Check_RTC_BKUP */
-
-  /** Initialize RTC and set the Time and Date
-  */
-  sTime.Hours = 0x0;
-  sTime.Minutes = 0x0;
-  sTime.Seconds = 0x0;
-  sTime.DayLightSaving = RTC_DAYLIGHTSAVING_NONE;
-  sTime.StoreOperation = RTC_STOREOPERATION_RESET;
-  if (HAL_RTC_SetTime(&hrtc, &sTime, RTC_FORMAT_BCD) != HAL_OK)
-  {
-    Error_Handler();
-  }
-  sDate.WeekDay = RTC_WEEKDAY_MONDAY;
-  sDate.Month = RTC_MONTH_JANUARY;
-  sDate.Date = 0x1;
-  sDate.Year = 0x0;
-
-  if (HAL_RTC_SetDate(&hrtc, &sDate, RTC_FORMAT_BCD) != HAL_OK)
-  {
-    Error_Handler();
-  }
-
-  /** Enable the WakeUp
-  */
-  if (HAL_RTCEx_SetWakeUpTimer(&hrtc, 0, RTC_WAKEUPCLOCK_RTCCLK_DIV16) != HAL_OK)
-  {
-    Error_Handler();
-  }
-  /* USER CODE BEGIN RTC_Init 2 */
-
-  /* USER CODE END RTC_Init 2 */
 
 }
 

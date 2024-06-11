@@ -22,8 +22,6 @@ C_DEPS :=
 
 # Every subdirectory with source files must be described here
 SUBDIRS := \
-Core/Src/BME280 \
-Core/Src/DS3231 \
 Core/Src \
 Core/Src/nrf24l01 \
 Core/Startup \
