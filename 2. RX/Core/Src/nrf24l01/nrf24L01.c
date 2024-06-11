@@ -26,8 +26,8 @@ extern UART_HandleTypeDef huart1;
 //extern osMessageQueueId_t DATAQueueHandle;
 
 uint8_t RX_BUF[TX_PLOAD_WIDTH] = {0};
-uint8_t TX_ADDRESS[TX_ADR_WIDTH] = {0xb2,0xb4,0x01};
-//uint8_t TX_ADDRESS_1[TX_ADR_WIDTH] = {0xb7,0xb5,0xa1};
+uint8_t TX_ADDRESS_0[TX_ADR_WIDTH] = {0xb2,0xb4,0x01};
+uint8_t TX_ADDRESS_1[TX_ADR_WIDTH] = {0xb7,0xb5,0xa1};
 //uint8_t TX_ADDRESS_2[TX_ADR_WIDTH] = {0xb6,0xb5,0xa1};
 //uint8_t TX_ADDRESS_3[TX_ADR_WIDTH] = {0xb5,0xb5,0xa1};
 //uint8_t TX_ADDRESS_4[TX_ADR_WIDTH] = {0xb4,0xb5,0xa1};
@@ -85,8 +85,8 @@ void NRF24_init_RX(uint8_t zero_pipe, uint8_t first_pipe, uint8_t second_pipe,
 	 	 uint8_t rx_pipes = (zero_pipe ) | (first_pipe << 1) | (second_pipe << 2) |
 	 			(third_pipe << 3) | (fourth_pipe << 4) | (fifth_pipe << 5);
 
-	 NRF24_WriteReg(EN_AA, 0x02); 			// Enable pipe0, pipe1 and pipe2
-	 NRF24_WriteReg(EN_RXADDR, 0x02); 		// Enable pipe0, pipe1 and pipe2				// включає канал
+	 NRF24_WriteReg(EN_AA, 0x03); 			// Enable pipe0, pipe1 and pipe2
+	 NRF24_WriteReg(EN_RXADDR, 0x03); 		// Enable pipe0, pipe1 and pipe2				// включає канал
 	 NRF24_WriteReg(SETUP_AW, 0x01); 			// Setup address width=3 bytes
 	 NRF24_WriteReg(SETUP_RETR, 0x5F);			// 1500us, 15 retrans
 
@@ -100,21 +100,29 @@ void NRF24_init_RX(uint8_t zero_pipe, uint8_t first_pipe, uint8_t second_pipe,
 	 NRF24_WriteReg(RF_SETUP, 0x06);  		//TX_PWR:0dBm, Datarate:1Mbps
 //	 NRF24_WriteReg(RF_SETUP, data_rate|output_tx_power);  		// TX_PWR:0dBm, Datarate: 250kbp	- New version
 
-	 NRF24_Write_Buf(RX_ADDR_P1, TX_ADDRESS, TX_ADR_WIDTH);											// Write TX address
+	 NRF24_Write_Buf(TX_ADDR, TX_ADDRESS_0, TX_ADR_WIDTH);
+	 NRF24_Write_Buf(RX_ADDR_P0, TX_ADDRESS_0, TX_ADR_WIDTH);
+	 NRF24_Write_Buf(RX_ADDR_P1, TX_ADDRESS_1, TX_ADR_WIDTH);
 
-//	 NRF24_Write_Buf(RX_ADDR_P0, TX_ADDRESS, TX_ADR_WIDTH);											// Write RX address Pipe 0
-//	 NRF24_Write_Buf(RX_ADDR_P1, TX_ADDRESS_1, TX_ADR_WIDTH);
-//	 NRF24_Write_Buf(RX_ADDR_P2, TX_ADDRESS_2, 1);
-//	 NRF24_Write_Buf(RX_ADDR_P3, TX_ADDRESS_3, 1);
-//	 NRF24_Write_Buf(RX_ADDR_P4, TX_ADDRESS_4, 1);
-//	 NRF24_Write_Buf(RX_ADDR_P5, TX_ADDRESS_5, 1);
+	 NRF24_WriteReg(RX_PW_P0, TX_PLOAD_WIDTH); 	//Number of bytes in RX payload in data pipe 0
+	 NRF24_WriteReg(RX_PW_P1, TX_PLOAD_WIDTH); 	//Number of bytes in RX payload in data pipe 1
 
-//	 NRF24_WriteReg(RX_PW_P0, TX_PLOAD_WIDTH);
-	 NRF24_WriteReg(RX_PW_P1, TX_PLOAD_WIDTH);	 													// Number of bytes in RX payload in data pipe 0
-//	 NRF24_WriteReg(RX_PW_P2, TX_PLOAD_WIDTH);
-//	 NRF24_WriteReg(RX_PW_P3, TX_PLOAD_WIDTH);
-//	 NRF24_WriteReg(RX_PW_P4, TX_PLOAD_WIDTH);
-//	 NRF24_WriteReg(RX_PW_P5, TX_PLOAD_WIDTH);
+
+//	 NRF24_Write_Buf(RX_ADDR_P1, TX_ADDRESS_0, TX_ADR_WIDTH);											// Write TX address
+//
+////	 NRF24_Write_Buf(RX_ADDR_P0, TX_ADDRESS, TX_ADR_WIDTH);											// Write RX address Pipe 0
+////	 NRF24_Write_Buf(RX_ADDR_P1, TX_ADDRESS_1, TX_ADR_WIDTH);
+////	 NRF24_Write_Buf(RX_ADDR_P2, TX_ADDRESS_2, 1);
+////	 NRF24_Write_Buf(RX_ADDR_P3, TX_ADDRESS_3, 1);
+////	 NRF24_Write_Buf(RX_ADDR_P4, TX_ADDRESS_4, 1);
+////	 NRF24_Write_Buf(RX_ADDR_P5, TX_ADDRESS_5, 1);
+//
+////	 NRF24_WriteReg(RX_PW_P0, TX_PLOAD_WIDTH);
+//	 NRF24_WriteReg(RX_PW_P1, TX_PLOAD_WIDTH);	 													// Number of bytes in RX payload in data pipe 0
+////	 NRF24_WriteReg(RX_PW_P2, TX_PLOAD_WIDTH);
+////	 NRF24_WriteReg(RX_PW_P3, TX_PLOAD_WIDTH);
+////	 NRF24_WriteReg(RX_PW_P4, TX_PLOAD_WIDTH);
+////	 NRF24_WriteReg(RX_PW_P5, TX_PLOAD_WIDTH);
 
 	 NRF24L01_RX_Mode();
 	 LED_OFF;
@@ -158,8 +166,8 @@ void NRF24_init_TX(uint8_t pipe, uint8_t chanel, uint8_t retrans_delay, uint8_t 
 
 	if(pipe == 0)
 	{
-		NRF24_Write_Buf(TX_ADDR, TX_ADDRESS, TX_ADR_WIDTH);											// Write TX address
-		NRF24_Write_Buf(RX_ADDR_P0, TX_ADDRESS, TX_ADR_WIDTH);											// Write RX address Pipe 0
+		NRF24_Write_Buf(TX_ADDR, TX_ADDRESS_0, TX_ADR_WIDTH);											// Write TX address
+		NRF24_Write_Buf(RX_ADDR_P0, TX_ADDRESS_0, TX_ADR_WIDTH);											// Write RX address Pipe 0
 		NRF24_WriteReg(RX_PW_P0, TX_PLOAD_WIDTH);	 													// Number of bytes in RX payload in data pipe 0
 	}
 //	if(pipe == 1)
@@ -348,7 +356,7 @@ void testDelay(void)
 // -------------------------------------------------------------------------------------
 void NRF24L01_TX_Mode(void)
 {
-	NRF24_Write_Buf(TX_ADDR, TX_ADDRESS, TX_ADR_WIDTH);
+	NRF24_Write_Buf(TX_ADDR, TX_ADDRESS_0, TX_ADR_WIDTH);		// ????
 	CE_RESET;
 
 	// Flush buffers
@@ -406,21 +414,31 @@ void IRQ_Callback(void)
 	uint8_t status=0x01;
 	uint8_t pipe;
 
-	DelayMicro(10);
+	LED_ON;
 
-	LED_TGL;
+	DelayMicro(10);
 
 	status = NRF24_ReadReg(STATUSS);
 
-	if(status & 0x40)							// If data ready in FIFO buff
+	if(status & 0x40)											// If data ready in FIFO buff
 	{
-		LED_ON;
-		NRF24_Read_Buf(RD_RX_PLOAD,RX_BUF,TX_PLOAD_WIDTH);		// Copy into buffer
+		pipe = (status>>1)&0x07;
+
+
+		/////////////////////////////////////	BED IDEA !!!
+		char buff_uart[20] = {0};
+		sprintf(buff_uart, "PIPE: %d:", pipe);
+		HAL_UART_Transmit(&huart1, (char*)buff_uart, sizeof(buff_uart), 1000);
+		/////////////////////////////////////
+
+
+		NRF24_Read_Buf(RD_RX_PLOAD, RX_BUF, TX_PLOAD_WIDTH);		// Copy into buffer
 		NRF24_WriteReg(STATUSS, 0x40);
+
 		rx_flag = 1;
 	}
 
-
+	LED_OFF;
 }
 // -------------------------------------------------------------------------------------
 void print_Data_Ower_uart(uint8_t *RX_BUF, uint8_t *pipe)
@@ -432,25 +450,7 @@ void print_Data_Ower_uart(uint8_t *RX_BUF, uint8_t *pipe)
 }
 // -------------------------------------------------------------------------------------
 
-/*
-/////////////////////////////////////////////////////////////////////////////////////////
-/////////////////////////////////////////////////////////////////////////////////////////
-/////////////////////////////////////////////////////////////////////////////////////////
-ЗАДАЧІ.
-	1. Підключити до одного RX два TX
-	2. Змінювати швидкість передачі.
-	3. Заміряти максимальну фактичну передачу даних при різних швидкостях передачі даних
-	4. Змінювати Pipes
-	5. Рефакторити код.
-	6. При ініціалізаціях використати такі вхідні параметри як:
-		1. RX або TX mode
-		2. Швидкість передачі даних
-		3. Потужність передачі даних(якщо можливо)
-		4. Pipe (якщо буде декілька передавачів)
-/////////////////////////////////////////////////////////////////////////////////////////
-/////////////////////////////////////////////////////////////////////////////////////////
-/////////////////////////////////////////////////////////////////////////////////////////
-  */
+
 
 
 

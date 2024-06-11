@@ -26,7 +26,17 @@ extern UART_HandleTypeDef huart1;
 //extern osMessageQueueId_t DATAQueueHandle;
 
 uint8_t RX_BUF[TX_PLOAD_WIDTH] = {0};
-uint8_t TX_ADDRESS[TX_ADR_WIDTH] = {0xb2,0xb4,0x01};
+
+#define NUM_OF_TX 2
+
+#if NUM_OF_TX == 1
+	uint8_t TX_ADDRESS[TX_ADR_WIDTH] = {0xb2,0xb4,0x01};		// TX 1
+#endif
+
+#if NUM_OF_TX == 2
+	uint8_t TX_ADDRESS[TX_ADR_WIDTH] = {0xb7,0xb5,0xa1};		// TX 2
+#endif
+//uint8_t TX_ADDRESS[TX_ADR_WIDTH] = {0xb7,0xb5,0xa1};		// TX 2
 //uint8_t TX_ADDRESS_1[TX_ADR_WIDTH] = {0xb7,0xb5,0xa1};
 //uint8_t TX_ADDRESS_2[TX_ADR_WIDTH] = {0xb6,0xb5,0xa1};
 //uint8_t TX_ADDRESS_3[TX_ADR_WIDTH] = {0xb5,0xb5,0xa1};
@@ -87,7 +97,7 @@ void NRF24_init_RX(uint8_t zero_pipe, uint8_t first_pipe, uint8_t second_pipe,
 	 NRF24_WriteReg(EN_AA, 0x02); 			// Enable pipe0, pipe1 and pipe2
 	 NRF24_WriteReg(EN_RXADDR, 0x02); 		// Enable pipe0, pipe1 and pipe2				// включає канал
 	 NRF24_WriteReg(SETUP_AW, 0x01); 			// Setup address width=3 bytes
-	 NRF24_WriteReg(SETUP_RETR, 0x5F);			// 1500us, 15 retrans
+	 NRF24_WriteReg(SETUP_RETR, 0x2F);			// 1500us, 15 retrans
 
 	 NRF24_ToggleFeatures();
 
@@ -142,7 +152,13 @@ void NRF24_init_TX(uint8_t pipe, uint8_t chanel, uint8_t retrans_delay, uint8_t 
 
 //	uint8_t SETUP_RETR_data = (retrans_delay << 4) | (retransmit_attempt);
 //	NRF24_WriteReg(SETUP_RETR, SETUP_RETR_data);		// 1500us, 15 retrans           0x7F
-	NRF24_WriteReg(SETUP_RETR, 0x5F);
+#if NUM_OF_TX == 1
+	NRF24_WriteReg(SETUP_RETR, 0xFF);			// 1750 us, 15 retrans
+#endif
+
+#if NUM_OF_TX == 2
+	NRF24_WriteReg(SETUP_RETR, 0x6F);			// 1750 us, 15 retrans
+#endif
 
 	NRF24_ToggleFeatures();
 
@@ -388,12 +404,11 @@ uint8_t NRF24L01_Send(uint8_t *pBuf)
 
 	while((GPIO_PinState)IRQ == GPIO_PIN_SET) {}
 	status = NRF24_ReadReg(STATUSS);
-	if(status&TX_DS) //tx_ds == 0x20
+	if(status&TX_DS) // If was intterupt (if send data was received )
 	{
-		// LED_TGL;										 <<<<<<<<<<<< LED
-	    NRF24_WriteReg(STATUSS, 0x20);
+	    NRF24_WriteReg(STATUSS, 0x20);		// Clear interrupt byte
 	}
-	else if(status&MAX_RT)
+	else if(status&MAX_RT)					// If
 	{
 		NRF24_WriteReg(STATUSS, 0x10);
 		NRF24_FlushTX();
@@ -413,11 +428,6 @@ uint8_t NRF24L01_Transmit(uint8_t *pipe_address, char *data[])
 {
 	uint8_t regval = 0;
 	regval = NRF24L01_Send(data);
-
-	char buf_uart_tx[70] = {0,};
-	sprintf(buf_uart_tx, "TX data: %s \n\r", data);
-
-	HAL_UART_Transmit(&huart1, buf_uart_tx, sizeof(buf_uart_tx), 1000);
 
 	return regval;
 }
@@ -459,6 +469,7 @@ void print_Data_Ower_uart(uint8_t *RX_BUF, uint8_t *pipe)
 
 	sprintf(buff_uart, "DATA: %s\n\r", RX_BUF);
 	HAL_UART_Transmit(&huart1, (char*)buff_uart, sizeof(buff_uart), 1000);
+
 }
 // -------------------------------------------------------------------------------------
 

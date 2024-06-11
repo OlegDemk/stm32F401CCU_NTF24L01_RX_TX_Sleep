@@ -46,6 +46,8 @@
 #define SLEEP_MODE ON
 
 #define UART_LOG ON
+#define LED ON
+
 
 #define RED_LED_ON HAL_GPIO_WritePin(GPIOB, LED_Red_Pin, GPIO_PIN_SET)
 #define RED_LED_OFF HAL_GPIO_WritePin(GPIOB, LED_Red_Pin, GPIO_PIN_RESET)
@@ -63,29 +65,7 @@ const int WakeUpCounter_5_sec = 5/Wake_up_Time_Base;
 const int WakeUpCounter_10_sec = 10/Wake_up_Time_Base;
 
 
-// --------------------------------------------------------------------------------------
-void led_test_blink(void)
-{
-	for(int i = 0; i <= 5; i++)
-	{
-		RED_LED_ON;
-		GREEN_LED_ON;
-		HAL_Delay(100);
-		RED_LED_OFF;
-		GREEN_LED_OFF;
-		HAL_Delay(100);
-	}
-}
-// --------------------------------------------------------------------------------------
-void error_blink_red_led(void)
-{
-	while(1)
-	{
-		RED_LED_TOGLE;
-		HAL_Delay(100);
-	}
-}
-// --------------------------------------------------------------------------------------
+
 ////////////////////////////////////////////////////////////////////////////
 
 
@@ -226,6 +206,7 @@ void get_THP_bme280(float *T, float *H, float *P)
 		error_blink_red_led();
 	}
 }
+// End BME280 part/////////////////////////////////////////////////////////////////////////////////////
 // --------------------------------------------------------------------------------
 void meassure_battery_voltage(float *voltage)
 {
@@ -245,9 +226,48 @@ void meassure_battery_voltage(float *voltage)
 //		HAL_UART_Transmit(&huart1, str, sizeof(str), 1000);
 }
 // --------------------------------------------------------------------------------
+void led_test_blink(void)
+{
+	for(int i = 0; i <= 5; i++)
+	{
+		RED_LED_ON;
+		GREEN_LED_ON;
+		HAL_Delay(100);
+		RED_LED_OFF;
+		GREEN_LED_OFF;
+		HAL_Delay(100);
+	}
+}
+// --------------------------------------------------------------------------------------
+void error_blink_red_led(void)
+{
+	while(1)
+	{
+		RED_LED_TOGLE;
+		HAL_Delay(100);
+	}
+}
+// --------------------------------------------------------------------------------------
+#define COUNTER_PACKET 1
+#define COUNTER_RETRANSMITED_PACKET 2
+#define COUNTER_LOST_PACKET 3
 
-// End BME280 part/////////////////////////////////////////////////////////////////////////////////////
-
+void WriteBackupRegister(uint32_t data, uint8_t type)
+{
+	if(type == COUNTER_PACKET)
+	{
+		HAL_RTCEx_BKUPWrite(&hrtc, RTC_BKP_DR1, data);
+	}
+}
+// --------------------------------------------------------------------------------
+uint32_t ReadBackupRegister(uint8_t type)
+{
+	if(type == COUNTER_PACKET)
+	{
+		return HAL_RTCEx_BKUPRead(&hrtc, RTC_BKP_DR1);
+	}
+}
+// --------------------------------------------------------------------------------
 
 /* USER CODE END 0 */
 
@@ -298,7 +318,10 @@ int main(void)
   {
 	  __HAL_PWR_CLEAR_FLAG(PWR_FLAG_SB);  // clear the flag
 
+#if LED == ON
 	  GREEN_LED_ON;
+#endif
+
 
 	  float BME280_temperature = 0;
 	  float BME280_humidity = 0;
@@ -354,7 +377,12 @@ int main(void)
  	  }
  	  strcat(tramsmeet_data_buffer, " ");
 
-// 	  HAL_UART_Transmit(&huart1, tramsmeet_data_buffer, sizeof(tramsmeet_data_buffer), 1000);
+#if UART_LOG == ON
+ 	  char buf_uart_tx[70] = {0,};
+ 	  sprintf(buf_uart_tx, "TX data: %s \n\r", tramsmeet_data_buffer);
+
+ 	  HAL_UART_Transmit(&huart1, buf_uart_tx, sizeof(buf_uart_tx), 1000);
+#endif
 
  	  NRF24_init_TX(0, 10, 0, 15, 0, 0);
 
@@ -362,9 +390,15 @@ int main(void)
 	  char buf1[10] = {0,};
 	  char buf2[54] = {0,};
 
-	  uint8_t retr_packages = 0;;
+	  uint8_t retr_packages = 0;
 	  uint8_t dt = 0 ;
  	  uint16_t lost_packages = 0;
+
+
+ 	  uint32_t RTC_DATA = ReadBackupRegister(COUNTER_PACKET);
+ 	  memset(buf_1, 0, sizeof(buf_1));
+ 	  sprintf(buf_1, "C%d", RTC_DATA);
+ 	  strcat(tramsmeet_data_buffer, buf_1);
 
 
  	  dt = NRF24L01_Transmit(1, tramsmeet_data_buffer);
@@ -372,10 +406,14 @@ int main(void)
  	  retr_packages  = dt & 0xF;			// Select retransmit packets
  	  lost_packages = dt & 0xF0;			// Select lost packets
 
+
+
 #if UART_LOG == ON
- 	  sprintf(buf2, "TX retr: %d, TX lost: %d \n\r", retr_packages, lost_packages);
+ 	  sprintf(buf2, "TX retr: %d, TX lost: %d, COUNTER_PACKET: %d\n\r", retr_packages, lost_packages, RTC_DATA);
  	  HAL_UART_Transmit(&huart1, buf2, sizeof(buf2), 1000);
 #endif
+
+ 	  WriteBackupRegister(RTC_DATA+1, COUNTER_PACKET);
 
  	  if(lost_packages > 0)		// If lost packages was detected
  	  {
@@ -389,7 +427,9 @@ int main(void)
  		 RED_LED_OFF;
  	  }
 
+#if LED == ON
  	  GREEN_LED_OFF;
+#endif
 
  	  NRF24_Sleep_mode();
 
@@ -775,7 +815,7 @@ static void MX_SPI2_Init(void)
   hspi2.Init.CLKPolarity = SPI_POLARITY_LOW;
   hspi2.Init.CLKPhase = SPI_PHASE_1EDGE;
   hspi2.Init.NSS = SPI_NSS_SOFT;
-  hspi2.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_16;
+  hspi2.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_4;
   hspi2.Init.FirstBit = SPI_FIRSTBIT_MSB;
   hspi2.Init.TIMode = SPI_TIMODE_DISABLE;
   hspi2.Init.CRCCalculation = SPI_CRCCALCULATION_DISABLE;
