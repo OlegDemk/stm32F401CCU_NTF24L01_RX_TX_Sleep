@@ -27,7 +27,7 @@ extern UART_HandleTypeDef huart1;
 
 uint8_t RX_BUF[TX_PLOAD_WIDTH] = {0};
 
-#define NUM_OF_TX 2
+#define NUM_OF_TX 1
 
 #if NUM_OF_TX == 1
 	uint8_t TX_ADDRESS[TX_ADR_WIDTH] = {0xb2,0xb4,0x01};		// TX 1

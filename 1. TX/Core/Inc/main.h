@@ -64,6 +64,8 @@ void Error_Handler(void);
 #define nrf_CE_GPIO_Port GPIOA
 #define nrf_CS_Pin GPIO_PIN_4
 #define nrf_CS_GPIO_Port GPIOA
+#define ACTION_Pin GPIO_PIN_12
+#define ACTION_GPIO_Port GPIOA
 #define LED_Red_Pin GPIO_PIN_8
 #define LED_Red_GPIO_Port GPIOB
 #define LED_Green_Pin GPIO_PIN_9

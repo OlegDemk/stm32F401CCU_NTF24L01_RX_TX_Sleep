@@ -48,6 +48,8 @@
 #define UART_LOG ON
 #define LED ON
 
+#define SLEEP_TIME 5
+
 
 #define RED_LED_ON HAL_GPIO_WritePin(GPIOB, LED_Red_Pin, GPIO_PIN_SET)
 #define RED_LED_OFF HAL_GPIO_WritePin(GPIOB, LED_Red_Pin, GPIO_PIN_RESET)
@@ -187,14 +189,20 @@ void init_bme280_(void)
 	dev.delay_ms(40);
 }
 //----------------------------------------------------------------------------------------
-void get_THP_bme280(float *T, float *H, float *P)
+void get_THP_bme280(char * buff)
 {
+	init_bme280_();
+
+	float BME280_temperature = 0;
+	float BME280_humidity = 0;
+	float BME280_preasure = 0;
+
 	if(bme280_get_sensor_data(BME280_ALL, &comp_data, &dev) == BME280_OK)
 	{
 		// Save data variables
-		*T = (float)comp_data.temperature;
-		*H = (float)comp_data.humidity;
-		*P = (float)comp_data.pressure;
+		BME280_temperature = (float)comp_data.temperature;
+		BME280_humidity = (float)comp_data.humidity;
+		BME280_preasure = (float)comp_data.pressure;
 	}
 	else
 	{
@@ -205,10 +213,22 @@ void get_THP_bme280(float *T, float *H, float *P)
 	{
 		error_blink_red_led();
 	}
+
+
+	char buffer[10] = {0,};
+
+	memset(buffer, 0, sizeof(buffer));
+	sprintf(buffer, "T%.1f", BME280_temperature);
+	strcat(buff, buffer);
+
+	memset(buffer, 0, sizeof(buffer));
+	sprintf(buffer, "H%.1f", BME280_humidity);
+	strcat(buff, buffer);
+
 }
 // End BME280 part/////////////////////////////////////////////////////////////////////////////////////
 // --------------------------------------------------------------------------------
-void meassure_battery_voltage(float *voltage)
+void meassure_battery_voltage(char * buff)
 {
 	uint16_t i = 0;
 	char str[35]={0};
@@ -220,22 +240,24 @@ void meassure_battery_voltage(float *voltage)
 
 	float V_bat = (float)HAL_ADC_GetValue(&hadc1)*3.3/4096;
 
-	*voltage = V_bat;
+	char buffer[10] = {0,};
+	float battery_voltage = 0;
 
-//		sprintf(str, "ADC: %04d V_bat: %.2f V \n\r", i, V_bat);
-//		HAL_UART_Transmit(&huart1, str, sizeof(str), 1000);
+	memset(buffer, 0, sizeof(buffer));
+	sprintf(buffer, "V%.1f ", V_bat);
+	strcat(buff, buffer);
 }
 // --------------------------------------------------------------------------------
-void led_test_blink(void)
+void led_test_blink(uint8_t times, uint8_t delay)
 {
-	for(int i = 0; i <= 5; i++)
+	for(int i = 0; i <= times; i++)
 	{
 		RED_LED_ON;
 		GREEN_LED_ON;
-		HAL_Delay(100);
+		HAL_Delay(delay);
 		RED_LED_OFF;
 		GREEN_LED_OFF;
-		HAL_Delay(100);
+		HAL_Delay(delay);
 	}
 }
 // --------------------------------------------------------------------------------------
@@ -248,15 +270,56 @@ void error_blink_red_led(void)
 	}
 }
 // --------------------------------------------------------------------------------------
+void read_time(char * buff)
+{
+
+	uint8_t buffer = 0;
+	uint8_t time_ds3231[10] = {0,};
+
+	for(int i = 0; i <=8; i++)
+	{
+		ds3231_read(i, &buffer);
+		time_ds3231[i] = buffer;
+	}
+
+	// convert time into string
+	char buf_1[5] = {0,};
+
+	for(int i = 2; i >= 0 ; i--)	 // Зчитати ще день, мі�?�?ць і рік !!!!!!
+	{
+		sprintf(buf_1, "%d", time_ds3231[i]);
+		strcat(buff, buf_1);
+		memset(buf_1, 0, sizeof(buf_1));
+
+		if(i > 0)
+		{
+			strcat(buff, ":");
+		}
+	}
+	strcat(buff, " ");
+}
+// --------------------------------------------------------------------------------------
+void set_time(void)		// For set time from TX
+{
+
+
+}
+
+
 #define COUNTER_PACKET 1
 #define COUNTER_RETRANSMITED_PACKET 2
 #define COUNTER_LOST_PACKET 3
+#define COUNTER_SECOND 4
 
 void WriteBackupRegister(uint32_t data, uint8_t type)
 {
 	if(type == COUNTER_PACKET)
 	{
 		HAL_RTCEx_BKUPWrite(&hrtc, RTC_BKP_DR1, data);
+	}
+	if(type == COUNTER_SECOND)
+	{
+		HAL_RTCEx_BKUPWrite(&hrtc, RTC_BKP_DR4, data);
 	}
 }
 // --------------------------------------------------------------------------------
@@ -266,8 +329,19 @@ uint32_t ReadBackupRegister(uint8_t type)
 	{
 		return HAL_RTCEx_BKUPRead(&hrtc, RTC_BKP_DR1);
 	}
+	if(type == COUNTER_SECOND)
+	{
+		return HAL_RTCEx_BKUPRead(&hrtc, RTC_BKP_DR4);
+	}
+
 }
 // --------------------------------------------------------------------------------
+void counter(char* buff)
+{
+
+
+
+}
 
 /* USER CODE END 0 */
 
@@ -312,80 +386,100 @@ int main(void)
 
 #if SLEEP_MODE == ON
 
+
+
+
+
+
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+//  Зробити окремо два переивання:
+//  1 .Від PA0 (Для перешивання) і входження в режим налаштувань
+//
+//  2. Від налаштованого RTC таймера для відсилання даних
 
   if (__HAL_PWR_GET_FLAG(PWR_FLAG_SB) != RESET)
   {
 	  __HAL_PWR_CLEAR_FLAG(PWR_FLAG_SB);  // clear the flag
 
+
+//	  if(HAL_GPIO_ReadPin(GPIOA, ACTION_Pin) == GPIO_PIN_SET)	// if button was pressed
+//	  {
+//		  led_test_blink(10, 30);
+//
+//		  uint8_t settings_status = 0;
+//
+//		  while(settings_status == 0)
+//		  {
+//			  led_test_blink(20, 60);
+//
+////			  1. Зробити RT
+////			  2. Чекати на налаштування з TX
+////			  3. Записати налаштування
+////			  4. Вийти
+//
+//
+//
+//			  settings_status = 1;
+//		  }
+//
+//	  }
+
+//	  i записувати в RTC register
+
+//	  uint32_t second_counter = ReadBackupRegister(COUNTER_SECOND);
+//
+//	  char buf_counter[70] = {0,};
+//	  sprintf(buf_counter, "COUNT: %d \n\r", second_counter);
+//	  HAL_UART_Transmit(&huart1, buf_counter, sizeof(buf_counter), 1000);
+//
+//	  if(second_counter >= SLEEP_TIME)		//
+//	  {
+//		  // TX
+//		  led_test_blink(10, 0);
+//		  //////////////////////////////////////////////////////////////////////////////////////////////
+//
+//
+//
+//
+//		  //////////////////////////////////////////////////////////////////////////////////////////////
+//
+//		  WriteBackupRegister(0, COUNTER_SECOND);
+//	  }
+//	  else
+//	  {
+//		  WriteBackupRegister(second_counter+1, COUNTER_SECOND);
+//	  }
+
+
+
+
+
+
 #if LED == ON
 	  GREEN_LED_ON;
 #endif
+	  char tramsmeet_data_buffer[50] = {0,};
 
-	  float BME280_temperature = 0;
-	  float BME280_humidity = 0;
-	  float BME280_preasure = 0;
-
-	  float battery_voltage = 0;
-
-	  init_bme280_();
-	  get_THP_bme280(&BME280_temperature, &BME280_humidity, &BME280_preasure);
-
- 	  //  Prepare string of data
- 	  uint8_t num_of_dev = 1;
- 	  char tramsmeet_data_buffer[50] = {0,};
-
- 	  char buf[10] = {0,};
-
- 	  memset(buf, 0, sizeof(buf));
- 	  sprintf(buf, "T%.1f", BME280_temperature);
- 	  strcat(tramsmeet_data_buffer, buf);
-
- 	  memset(buf, 0, sizeof(buf));
- 	  sprintf(buf, "H%.1f", BME280_humidity);
- 	  strcat(tramsmeet_data_buffer, buf);
-
- 	  // Meassure voltage on battery
- 	  meassure_battery_voltage(&battery_voltage);
- 	  memset(buf, 0, sizeof(buf));
- 	  sprintf(buf, "V%.1f ", battery_voltage);
- 	  strcat(tramsmeet_data_buffer, buf);
-
- 	  // DS3231 clock
- 	  uint8_t buffer = 0;
- 	  uint8_t time_ds3231[10] = {0,};
-
- 	  for(int i = 0; i <=8; i++)
- 	  {
- 		  ds3231_read(i, &buffer);
- 		  time_ds3231[i] = buffer;
- 	  }
-
- 	  // convert time into string
- 	  char buf_1[5] = {0,};
-
- 	  for(int i = 2; i >= 0 ; i--)
- 	  {
- 		  sprintf(buf_1, "%d", time_ds3231[i]);
- 		  strcat(tramsmeet_data_buffer, buf_1);
- 		  memset(buf_1, 0, sizeof(buf_1));
- 		  if(i > 0)
- 		  {
- 			  strcat(tramsmeet_data_buffer, ":");
- 		  }
- 	  }
- 	  strcat(tramsmeet_data_buffer, " ");
+	  get_THP_bme280(tramsmeet_data_buffer); 			// Meassure T, H and P
+ 	  meassure_battery_voltage(tramsmeet_data_buffer);  // Meassure voltage on battery
+ 	  read_time(tramsmeet_data_buffer);					// DS3231 clock
 
 #if UART_LOG == ON
  	  char buf_uart_tx[70] = {0,};
  	  sprintf(buf_uart_tx, "TX data: %s \n\r", tramsmeet_data_buffer);
-
  	  HAL_UART_Transmit(&huart1, buf_uart_tx, sizeof(buf_uart_tx), 1000);
 #endif
 
- 	  NRF24_init_TX(0, 10, 0, 15, 0, 0);
+
 
  	  // Detect loat packages
+
+
+
+// 	  Записувати кількість передач в окремі функції
+
 	  char buf1[10] = {0,};
 	  char buf2[54] = {0,};
 
@@ -393,13 +487,14 @@ int main(void)
 	  uint8_t dt = 0 ;
  	  uint16_t lost_packages = 0;
 
-
+ 	  char buf_1[10] = {0,};
  	  uint32_t RTC_DATA = ReadBackupRegister(COUNTER_PACKET);
  	  memset(buf_1, 0, sizeof(buf_1));
  	  sprintf(buf_1, "C%d", RTC_DATA);
  	  strcat(tramsmeet_data_buffer, buf_1);
 
 
+ 	  NRF24_init_TX(0, 10, 0, 15, 0, 0);
  	  dt = NRF24L01_Transmit(1, tramsmeet_data_buffer);
 
  	  retr_packages  = dt & 0xF;			// Select retransmit packets
@@ -474,104 +569,6 @@ int main(void)
   while (1)
   {
 
-#if SLEEP_MODE == OFF
-	  float BME280_temperature = 0;
-	  float BME280_humidity = 0;
-	  float BME280_preasure = 0;
-
-	  float battery_voltage = 0;
-
-
-
-	   	 init_bme280_();
-
-	   	 get_THP_bme280(&BME280_temperature, &BME280_humidity, &BME280_preasure);
-
-	   	  //  Prepare string of data
-	   	  uint8_t num_of_dev = 1;
-	   	  char tramsmeet_data_buffer[40] = {0,};
-
-	   	  char buf[10] = {0,};
-
-	   	  memset(buf, 0, sizeof(buf));
-	   	  sprintf(buf, "T%.1f", BME280_temperature);
-	   	  strcat(tramsmeet_data_buffer, buf);
-
-	   	  memset(buf, 0, sizeof(buf));
-	   	  sprintf(buf, "H%.1f", BME280_humidity);
-	   	  strcat(tramsmeet_data_buffer, buf);
-
-
-	   	  // Meassure voltage on battery
-	   	  meassure_battery_voltage(&battery_voltage);
-	   	  memset(buf, 0, sizeof(buf));
-	   	  sprintf(buf, "V%.1f ", battery_voltage);
-	   	  strcat(tramsmeet_data_buffer, buf);
-
-	   	  // DS3231 clock
-	   	  uint8_t buffer = 0;
-	   	  uint8_t time_ds3231[10] = {0,};
-
-	   	  for(int i = 0; i <=8; i++)
-	   	  {
-	   		  ds3231_read(i, &buffer);
-	   		  time_ds3231[i] = buffer;
-	   	  }
-
-
-	   	  // convert into string
-	   	  char buf_1[5] = {0,};
-
-	   	  for(int i = 2; i >= 0 ; i--)
-	   	  {
-	   		  sprintf(buf_1, "%d", time_ds3231[i]);
-	   		  strcat(tramsmeet_data_buffer, buf_1);
-	   		  memset(buf_1, 0, sizeof(buf_1));
-	   		  if(i > 0)
-	   		  {
-	   			  strcat(tramsmeet_data_buffer, ":");
-	   		  }
-	   	  }
-	   	  strcat(tramsmeet_data_buffer, " ");
-
-
-	   	  // HAL_UART_Transmit(&huart1, tramsmeet_data_buffer, sizeof(tramsmeet_data_buffer), 1000);
-
-	   	  NRF24_init_TX(0, 10, 0, 15, 0, 0);
-
-	   	  // Detect loat packages
-	  	  char buf1[10] = {0,};
-	  	  char buf2[54] = {0,};
-
-	  	  uint8_t retr_packages = 0;;
-	  	  uint8_t dt = 0 ;
-	   	  uint16_t lost_packages = 0;
-
-
-	   	  dt = NRF24L01_Transmit(1, tramsmeet_data_buffer);
-
-	   	  retr_packages  = dt & 0xF;			// Select retransmit packets
-	   	  lost_packages = dt & 0xF0;			// Select lost packets
-
-	   	  sprintf(buf2, "TX retr: %d, TX lost: %d \n\r", retr_packages, lost_packages);
-	   	  HAL_UART_Transmit(&huart1, buf2, sizeof(buf2), 1000);
-
-	   	  if(lost_packages > 0)		// If lost packages was detected
-	   	  {
-	   		 RED_LED_ON;
-	   		 HAL_Delay(10);
-	   		 RED_LED_OFF;
-	   	  }
-	   	  else
-	   	  {
-	   		 RED_LED_OFF;
-	   	  }
-
-
-	   	  NRF24_Sleep_mode();
-
-	   	HAL_Delay(1000);
-#endif
 	  //////////////////// TX ///////////////////////
 //	  NRF24L01_Transmit(1, "1234567890");
 //	  HAL_Delay(1000);
@@ -895,6 +892,12 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+
+  /*Configure GPIO pin : ACTION_Pin */
+  GPIO_InitStruct.Pin = ACTION_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  HAL_GPIO_Init(ACTION_GPIO_Port, &GPIO_InitStruct);
 
   /*Configure GPIO pins : LED_Red_Pin LED_Green_Pin */
   GPIO_InitStruct.Pin = LED_Red_Pin|LED_Green_Pin;
