@@ -5062,7 +5062,6 @@ int main(void)
  80029bc:	f002 f9ae 	bl	8004d1c <HAL_GPIO_WritePin>
 #endif
 
-
 	  float BME280_temperature = 0;
  80029c0:	f04f 0300 	mov.w	r3, #0
  80029c4:	f8c7 30f0 	str.w	r3, [r7, #240]	; 0xf0

@@ -322,7 +322,6 @@ int main(void)
 	  GREEN_LED_ON;
 #endif
 
-
 	  float BME280_temperature = 0;
 	  float BME280_humidity = 0;
 	  float BME280_preasure = 0;
