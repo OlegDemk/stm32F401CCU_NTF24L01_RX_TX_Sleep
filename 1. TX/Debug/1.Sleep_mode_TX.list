@@ -5383,10 +5383,10 @@ int main(void)
  8002c12:	f000 fa7d 	bl	8003110 <MX_SPI2_Init>
   MX_ADC1_Init();
  8002c16:	f000 f997 	bl	8002f48 <MX_ADC1_Init>
-//  Зробити окремо два переивання:
-//  1 .Від PA0 (Для перешивання) і входження в режим налаштувань
+//  Зробити окремо два переиванн�?:
+//  1 .Від PA0 (Дл�? перешиванн�?) і входженн�? в режим налаштувань
 //
-//  2. Від налаштованого RTC таймера для відсилання даних
+//  2. Від налаштованого RTC таймера дл�? від�?иланн�? даних
 
   if (__HAL_PWR_GET_FLAG(PWR_FLAG_SB) != RESET)
  8002c1a:	4b8e      	ldr	r3, [pc, #568]	; (8002e54 <main+0x260>)
@@ -5497,7 +5497,7 @@ int main(void)
 
 
 
-// 	  Записувати кількість передач в окремі функції
+// 	  Запи�?увати кількі�?ть передач в окремі функції
 
 	  char buf1[10] = {0,};
  8002cde:	2300      	movs	r3, #0
@@ -5526,8 +5526,8 @@ int main(void)
  8002d0e:	f8a7 30c0 	strh.w	r3, [r7, #192]	; 0xc0
 
 
-// 	  ПУТАНИНА З ЦИМИ ЗМІННАМИ !!!! їх треба розділити
-//	  RTC ЖОХУЯ БЕРЕ живлення на себе
+// 	  ПУТ�?�?И�?�? З ЦИМИ ЗМІ�?�?�?МИ !!!! їх треба розділити
+//	  RTC ЖОХУЯ БЕРЕ живленн�? на �?ебе
  	  char buf_1[10] = {0,};
  8002d12:	2300      	movs	r3, #0
  8002d14:	f8c7 30a0 	str.w	r3, [r7, #160]	; 0xa0
@@ -5838,8 +5838,8 @@ void SystemClock_Config(void)
   RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
  8002f10:	2302      	movs	r3, #2
  8002f12:	613b      	str	r3, [r7, #16]
-  RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;
- 8002f14:	2300      	movs	r3, #0
+  RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV8;
+ 8002f14:	23a0      	movs	r3, #160	; 0xa0
  8002f16:	617b      	str	r3, [r7, #20]
   RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV2;
  8002f18:	f44f 5380 	mov.w	r3, #4096	; 0x1000
@@ -5848,9 +5848,9 @@ void SystemClock_Config(void)
  8002f1e:	2300      	movs	r3, #0
  8002f20:	61fb      	str	r3, [r7, #28]
 
-  if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_2) != HAL_OK)
+  if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_0) != HAL_OK)
  8002f22:	f107 030c 	add.w	r3, r7, #12
- 8002f26:	2102      	movs	r1, #2
+ 8002f26:	2100      	movs	r1, #0
  8002f28:	4618      	mov	r0, r3
  8002f2a:	f003 feb1 	bl	8006c90 <HAL_RCC_ClockConfig>
  8002f2e:	4603      	mov	r3, r0
@@ -6259,9 +6259,9 @@ static void MX_SPI2_Init(void)
  800313a:	4b0e      	ldr	r3, [pc, #56]	; (8003174 <MX_SPI2_Init+0x64>)
  800313c:	f44f 7200 	mov.w	r2, #512	; 0x200
  8003140:	619a      	str	r2, [r3, #24]
-  hspi2.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_4;
+  hspi2.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_2;
  8003142:	4b0c      	ldr	r3, [pc, #48]	; (8003174 <MX_SPI2_Init+0x64>)
- 8003144:	2208      	movs	r2, #8
+ 8003144:	2200      	movs	r2, #0
  8003146:	61da      	str	r2, [r3, #28]
   hspi2.Init.FirstBit = SPI_FIRSTBIT_MSB;
  8003148:	4b0a      	ldr	r3, [pc, #40]	; (8003174 <MX_SPI2_Init+0x64>)

@@ -397,10 +397,10 @@ int main(void)
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
-//  Зробити окремо два переивання:
-//  1 .Від PA0 (Для перешивання) і входження в режим налаштувань
+//  Зробити окремо два переиванн�?:
+//  1 .Від PA0 (Дл�? перешиванн�?) і входженн�? в режим налаштувань
 //
-//  2. Від налаштованого RTC таймера для відсилання даних
+//  2. Від налаштованого RTC таймера дл�? від�?иланн�? даних
 
   if (__HAL_PWR_GET_FLAG(PWR_FLAG_SB) != RESET)
   {
@@ -459,7 +459,7 @@ int main(void)
 
 
 
-// 	  Записувати кількість передач в окремі функції
+// 	  Запи�?увати кількі�?ть передач в окремі функції
 
 	  char buf1[10] = {0,};
 	  char buf2[54] = {0,};
@@ -469,8 +469,8 @@ int main(void)
  	  uint16_t lost_packages = 0;
 
 
-// 	  ПУТАНИНА З ЦИМИ ЗМІННАМИ !!!! їх треба розділити
-//	  RTC ЖОХУЯ БЕРЕ живлення на себе
+// 	  ПУТ�?�?И�?�? З ЦИМИ ЗМІ�?�?�?МИ !!!! їх треба розділити
+//	  RTC ЖОХУЯ БЕРЕ живленн�? на �?ебе
  	  char buf_1[10] = {0,};
  	  uint32_t RTC_DATA = ReadBackupRegister(COUNTER_PACKET);
  	  memset(buf_1, 0, sizeof(buf_1));
@@ -544,7 +544,7 @@ int main(void)
 //
 //
 //
-//// 	  Записувати кількість передач в окремі функції
+//// 	  Запи�?увати кількі�?ть передач в окремі функції
 //
 //	  char buf1[10] = {0,};
 //	  char buf2[54] = {0,};
@@ -688,11 +688,11 @@ void SystemClock_Config(void)
   RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK|RCC_CLOCKTYPE_SYSCLK
                               |RCC_CLOCKTYPE_PCLK1|RCC_CLOCKTYPE_PCLK2;
   RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
-  RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;
+  RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV8;
   RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV2;
   RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV1;
 
-  if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_2) != HAL_OK)
+  if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_0) != HAL_OK)
   {
     Error_Handler();
   }
@@ -877,7 +877,7 @@ static void MX_SPI2_Init(void)
   hspi2.Init.CLKPolarity = SPI_POLARITY_LOW;
   hspi2.Init.CLKPhase = SPI_PHASE_1EDGE;
   hspi2.Init.NSS = SPI_NSS_SOFT;
-  hspi2.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_4;
+  hspi2.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_2;
   hspi2.Init.FirstBit = SPI_FIRSTBIT_MSB;
   hspi2.Init.TIMode = SPI_TIMODE_DISABLE;
   hspi2.Init.CRCCalculation = SPI_CRCCALCULATION_DISABLE;
