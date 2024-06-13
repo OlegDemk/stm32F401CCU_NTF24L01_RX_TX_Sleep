@@ -45,8 +45,8 @@
 
 #define SLEEP_MODE ON
 
-#define UART_LOG ON
-#define LED ON
+#define UART_LOG OFF
+#define LED OFF
 
 #define SLEEP_TIME 5
 
@@ -248,7 +248,7 @@ void meassure_battery_voltage(char * buff)
 	strcat(buff, buffer);
 }
 // --------------------------------------------------------------------------------
-void led_test_blink(uint8_t times, uint8_t delay)
+void led_test_blink(uint16_t times, uint16_t delay)
 {
 	for(int i = 0; i <= times; i++)
 	{
@@ -272,6 +272,9 @@ void error_blink_red_led(void)
 // --------------------------------------------------------------------------------------
 void read_time(char * buff)
 {
+
+	time_i2c_write_single(DS3231_I2C_ADDRESS, 0x0E, 0x04);			// Turn Off square wave signal on SQW Pin DS3231
+	time_i2c_write_single(DS3231_I2C_ADDRESS, 0x0F, 0x00);			// Turn Off square wave signal on 32K Pin DS3231
 
 	uint8_t buffer = 0;
 	uint8_t time_ds3231[10] = {0,};
@@ -404,57 +407,34 @@ int main(void)
 	  __HAL_PWR_CLEAR_FLAG(PWR_FLAG_SB);  // clear the flag
 
 
-//	  if(HAL_GPIO_ReadPin(GPIOA, ACTION_Pin) == GPIO_PIN_SET)	// if button was pressed
-//	  {
-//		  led_test_blink(10, 30);
-//
-//		  uint8_t settings_status = 0;
-//
-//		  while(settings_status == 0)
-//		  {
-//			  led_test_blink(20, 60);
-//
-////			  1. Зробити RT
-////			  2. Чекати на налаштування з TX
-////			  3. Записати налаштування
-////			  4. Вийти
-//
-//
-//
-//			  settings_status = 1;
-//		  }
-//
-//	  }
+	  HAL_PWR_DisableWakeUpPin(PWR_WAKEUP_PIN1);  // disable PA0
 
-//	  i записувати в RTC register
-
-//	  uint32_t second_counter = ReadBackupRegister(COUNTER_SECOND);
-//
-//	  char buf_counter[70] = {0,};
-//	  sprintf(buf_counter, "COUNT: %d \n\r", second_counter);
-//	  HAL_UART_Transmit(&huart1, buf_counter, sizeof(buf_counter), 1000);
-//
-//	  if(second_counter >= SLEEP_TIME)		//
-//	  {
-//		  // TX
-//		  led_test_blink(10, 0);
-//		  //////////////////////////////////////////////////////////////////////////////////////////////
-//
-//
-//
-//
-//		  //////////////////////////////////////////////////////////////////////////////////////////////
-//
-//		  WriteBackupRegister(0, COUNTER_SECOND);
-//	  }
-//	  else
-//	  {
-//		  WriteBackupRegister(second_counter+1, COUNTER_SECOND);
-//	  }
+	  /** Deactivate the RTC wakeup  **/
+	  HAL_RTCEx_DeactivateWakeUpTimer(&hrtc);
 
 
+	  // Якщо кнопка нати�?нута то перейти в не�?пл�?чий режим на 10 �?екунд (блимати ледом)
+	  if(HAL_GPIO_ReadPin(GPIOA, ACTION_Pin) == 1)
+	  {
+		  char buf_uart_tx[50] = {0,};
+		  sprintf(buf_uart_tx, "BUTTON ACTION PRESSED !\n\r");
+		  HAL_UART_Transmit(&huart1, buf_uart_tx, sizeof(buf_uart_tx), 1000);
+
+		  led_test_blink(10, 800);
+	  }
 
 
+	  uint32_t seconds = ReadBackupRegister(COUNTER_SECOND);
+
+	  if(seconds >= 3)
+	  {
+
+		  char buf_uart_tx[50] = {0,};
+//		  		 memset(buf_uart_tx, 0, sizeof(buf_uart_tx));
+//		  		 sprintf(buf_uart_tx, "Wake Up ... COUNTER: %d\n\r", seconds);
+//		  		 HAL_UART_Transmit(&huart1, buf_uart_tx, sizeof(buf_uart_tx), 1000);
+//
+//		  		 led_test_blink(10, 10);
 
 
 #if LED == ON
@@ -467,7 +447,8 @@ int main(void)
  	  read_time(tramsmeet_data_buffer);					// DS3231 clock
 
 #if UART_LOG == ON
- 	  char buf_uart_tx[70] = {0,};
+// 	  char buf_uart_tx[70] = {0,};
+ 	  memset(buf_uart_tx, 0, sizeof(buf_uart_tx));
  	  sprintf(buf_uart_tx, "TX data: %s \n\r", tramsmeet_data_buffer);
  	  HAL_UART_Transmit(&huart1, buf_uart_tx, sizeof(buf_uart_tx), 1000);
 #endif
@@ -487,6 +468,9 @@ int main(void)
 	  uint8_t dt = 0 ;
  	  uint16_t lost_packages = 0;
 
+
+// 	  ПУТАНИНА З ЦИМИ ЗМІННАМИ !!!! їх треба розділити
+//	  RTC ЖОХУЯ БЕРЕ живлення на себе
  	  char buf_1[10] = {0,};
  	  uint32_t RTC_DATA = ReadBackupRegister(COUNTER_PACKET);
  	  memset(buf_1, 0, sizeof(buf_1));
@@ -528,6 +512,88 @@ int main(void)
  	  NRF24_Sleep_mode();
 
 
+ 	  	  uint32_t ffff = 0;
+ 		  WriteBackupRegister(ffff, COUNTER_SECOND);
+	  }
+
+
+	  else
+	  {
+		  WriteBackupRegister(seconds+1, COUNTER_SECOND);		// Update counter of seconds
+	  }
+
+
+//#if LED == ON
+//	  GREEN_LED_ON;
+//#endif
+//	  char tramsmeet_data_buffer[50] = {0,};
+//
+//	  get_THP_bme280(tramsmeet_data_buffer); 			// Meassure T, H and P
+// 	  meassure_battery_voltage(tramsmeet_data_buffer);  // Meassure voltage on battery
+// 	  read_time(tramsmeet_data_buffer);					// DS3231 clock
+//
+//#if UART_LOG == ON
+// 	  char buf_uart_tx[70] = {0,};
+// 	  sprintf(buf_uart_tx, "TX data: %s \n\r", tramsmeet_data_buffer);
+// 	  HAL_UART_Transmit(&huart1, buf_uart_tx, sizeof(buf_uart_tx), 1000);
+//#endif
+//
+//
+//
+// 	  // Detect loat packages
+//
+//
+//
+//// 	  Записувати кількість передач в окремі функції
+//
+//	  char buf1[10] = {0,};
+//	  char buf2[54] = {0,};
+//
+//	  uint8_t retr_packages = 0;
+//	  uint8_t dt = 0 ;
+// 	  uint16_t lost_packages = 0;
+//
+// 	  char buf_1[10] = {0,};
+// 	  uint32_t RTC_DATA = ReadBackupRegister(COUNTER_PACKET);
+// 	  memset(buf_1, 0, sizeof(buf_1));
+// 	  sprintf(buf_1, "C%d", RTC_DATA);
+// 	  strcat(tramsmeet_data_buffer, buf_1);
+//
+//
+// 	  NRF24_init_TX(0, 10, 0, 15, 0, 0);
+// 	  dt = NRF24L01_Transmit(1, tramsmeet_data_buffer);
+//
+// 	  retr_packages  = dt & 0xF;			// Select retransmit packets
+// 	  lost_packages = dt & 0xF0;			// Select lost packets
+//
+//
+//
+//#if UART_LOG == ON
+// 	  sprintf(buf2, "TX retr: %d, TX lost: %d, COUNTER_PACKET: %d\n\r", retr_packages, lost_packages, RTC_DATA);
+// 	  HAL_UART_Transmit(&huart1, buf2, sizeof(buf2), 1000);
+//#endif
+//
+// 	  WriteBackupRegister(RTC_DATA+1, COUNTER_PACKET);
+//
+// 	  if(lost_packages > 0)		// If lost packages was detected
+// 	  {
+// 		 RED_LED_ON;
+// 		 HAL_Delay(10);
+// 		 RED_LED_OFF;
+//// 		 HAL_UART_Transmit(&huart1, str, sizeof(str), 1000);
+// 	  }
+// 	  else
+// 	  {
+// 		 RED_LED_OFF;
+// 	  }
+//
+//#if LED == ON
+// 	  GREEN_LED_OFF;
+//#endif
+//
+// 	  NRF24_Sleep_mode();
+
+
  	  /** Disable the WWAKEUP PIN **/
  	  HAL_PWR_DisableWakeUpPin(PWR_WAKEUP_PIN1);  // disable PA0
 
@@ -547,7 +613,7 @@ int main(void)
     /* Enable the WAKEUP PIN */
    HAL_PWR_EnableWakeUpPin(PWR_WAKEUP_PIN1);
 
-   if (HAL_RTCEx_SetWakeUpTimer_IT(&hrtc, WakeUpCounter_1_sec, RTC_WAKEUPCLOCK_RTCCLK_DIV16) != HAL_OK)
+   if (HAL_RTCEx_SetWakeUpTimer_IT(&hrtc, WakeUpCounter_5_sec, RTC_WAKEUPCLOCK_RTCCLK_DIV16) != HAL_OK)
    {
      Error_Handler();
    }
