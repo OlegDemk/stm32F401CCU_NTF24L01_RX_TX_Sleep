@@ -45,11 +45,12 @@
 
 #define SLEEP_MODE ON
 
-#define UART_LOG OFF
+#define UART_LOG ON
 #define LED OFF
 
-#define SLEEP_TIME 5
-
+#define SLEEP_TIME_10_SEC 1
+#define SLEEP_TIME_30_SEC 5
+#define SLEEP_TIME_1_MIN 12
 
 #define RED_LED_ON HAL_GPIO_WritePin(GPIOB, LED_Red_Pin, GPIO_PIN_SET)
 #define RED_LED_OFF HAL_GPIO_WritePin(GPIOB, LED_Red_Pin, GPIO_PIN_RESET)
@@ -313,13 +314,11 @@ void read_time_internal_RTC(char *buff)
 	 HAL_RTC_GetTime(&hrtc, &sTime, RTC_FORMAT_BIN);
 	 HAL_RTC_GetDate(&hrtc, &sDate, RTC_FORMAT_BIN);
 
-	 uint8_t buffer = 0;
-	 uint8_t time_RTC[10] = {0,};
 
 	 char buf_uart_tx[70] = {0,};
-	 memset(buf_uart_tx, 0, sizeof(buf_uart_tx));
-	 sprintf(buf_uart_tx, "%d:%d:%d ", sTime.Hours, sTime.Minutes, sTime.Seconds);
+	 sprintf(buf_uart_tx, "%d:%d:%d %d.%d.%d ", sTime.Hours, sTime.Minutes, sTime.Seconds, sDate.Date, sDate.Month, sDate.Year);
 	 strcat(buff, buf_uart_tx);
+
 #if UART_LOG == ON
 	 HAL_UART_Transmit(&huart1, buf_uart_tx, sizeof(buf_uart_tx), 1000);
 #endif
@@ -340,35 +339,23 @@ void set_time_internal_RTC(void)
 		Error_Handler();
 	}
 
+	sDate.WeekDay = RTC_WEEKDAY_MONDAY;
+	sDate.Month = RTC_MONTH_JANUARY;
+	sDate.Date = 0x1;
+	sDate.Year = 0x18;
+
+	if (HAL_RTC_SetDate(&hrtc, &sDate, RTC_FORMAT_BCD) != HAL_OK)
+	{
+		Error_Handler();
+	}
 }
-//void read_time_internal_RTC(char * buff)
-//{
-//	 RTC_TimeTypeDef sTime;
-//	 RTC_DateTypeDef sDate;
-//
-//	 HAL_RTC_GetTime(&hrtc, &sTime, RTC_FORMAT_BIN);
-//	 HAL_RTC_GetDate(&hrtc, &sDate, RTC_FORMAT_BIN);
-//
-//	 uint8_t buffer = 0;
-//	 uint8_t time_RTC[10] = {0,};
-//
-//	 sprintf(time_RTC, "%d:%d:%d", sTime.Hours, sTime.Minutes, sTime.Seconds);
-//	 strcat(buff, time_RTC);
-//	 strcat(buff, " ");
-//
-//	#if UART_LOG == ON
-//	 	  char buf_uart_tx[70] = {0,};
-//	 	  memset(buf_uart_tx, 0, sizeof(buf_uart_tx));
-//	 	  sprintf(buf_uart_tx, "TIME %d:%d:%d \n\r", sTime.Hours, sTime.Minutes, sTime.Seconds);
-//	 	  HAL_UART_Transmit(&huart1, buf_uart_tx, sizeof(buf_uart_tx), 1000);
-//	#endif
-//}
 // --------------------------------------------------------------------------------------
-void set_time(void)		// For set time from TX
+void settings_mode(void)
 {
 
 
 }
+// --------------------------------------------------------------------------------------
 
 
 #define COUNTER_PACKET 1
@@ -447,106 +434,67 @@ int main(void)
 
 
 
-
-
 #if SLEEP_MODE == ON
 
+if (__HAL_PWR_GET_FLAG(PWR_FLAG_SB) != RESET)			// Is device woke up from standby mode ?
+{
+	__HAL_PWR_CLEAR_FLAG(PWR_FLAG_SB);  				// clear the flag
 
+	HAL_PWR_DisableWakeUpPin(PWR_WAKEUP_PIN1);  		// disable PA0
+	HAL_RTCEx_DeactivateWakeUpTimer(&hrtc);			// Deactivate the RTC wakeup
 
+	// If button was presset more than 5 sec, go to settings mode
+	if(HAL_GPIO_ReadPin(GPIOA, ACTION_Pin) == 1)
+	{
+#if UART_LOG == ON
+		char buf_uart_tx[50] = {0,};
+		sprintf(buf_uart_tx, "Settings mode\n\r");
+		HAL_UART_Transmit(&huart1, buf_uart_tx, sizeof(buf_uart_tx), 1000);
+#endif
 
+		led_test_blink(10, 800);
 
+		settings_mode();
+	}
 
-  ////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	  uint32_t period = ReadBackupRegister(COUNTER_SECOND);
 
-
-//  Зробити окремо два переиванн�?:
-//  1 .Від PA0 (Дл�? перешиванн�?) і входженн�? в режим налаштувань
-//
-//  2. Від налаштованого RTC таймера дл�? від�?иланн�? даних
-
-  if (__HAL_PWR_GET_FLAG(PWR_FLAG_SB) != RESET)
-  {
-	  __HAL_PWR_CLEAR_FLAG(PWR_FLAG_SB);  // clear the flag
-
-
-	  HAL_PWR_DisableWakeUpPin(PWR_WAKEUP_PIN1);  // disable PA0
-
-	  /** Deactivate the RTC wakeup  **/
-	  HAL_RTCEx_DeactivateWakeUpTimer(&hrtc);
-
-
-	  // Якщо кнопка нати�?нута то перейти в не�?пл�?чий режим на 10 �?екунд (блимати ледом)
-	  if(HAL_GPIO_ReadPin(GPIOA, ACTION_Pin) == 1)
+	  if(period >= SLEEP_TIME_10_SEC)
 	  {
+		  char tramsmeet_data_buffer[50] = {0,};
 		  char buf_uart_tx[50] = {0,};
-		  sprintf(buf_uart_tx, "BUTTON ACTION PRESSED !\n\r");
-		  HAL_UART_Transmit(&huart1, buf_uart_tx, sizeof(buf_uart_tx), 1000);
-
-		  led_test_blink(10, 800);
-	  }
-
-
-	  uint32_t seconds = ReadBackupRegister(COUNTER_SECOND);
-
-	  if(seconds >= 5)
-	  {
-
-		  char buf_uart_tx[50] = {0,};
-//		  		 memset(buf_uart_tx, 0, sizeof(buf_uart_tx));
-//		  		 sprintf(buf_uart_tx, "Wake Up ... COUNTER: %d\n\r", seconds);
-//		  		 HAL_UART_Transmit(&huart1, buf_uart_tx, sizeof(buf_uart_tx), 1000);
-//
-//		  		 led_test_blink(10, 10);
-
 
 #if LED == ON
 	  GREEN_LED_ON;
 #endif
-	  char tramsmeet_data_buffer[50] = {0,};
-
-	  get_THP_bme280(tramsmeet_data_buffer); 			// Meassure T, H and P
- 	  meassure_battery_voltage(tramsmeet_data_buffer);  // Meassure voltage on battery
- //	  read_time(tramsmeet_data_buffer);					// DS3231 clock
-
- 	 read_time_internal_RTC(tramsmeet_data_buffer);
-
- //	 read_time_internal_RTC(tramsmeet_data_buffer);					//
+	  	  get_THP_bme280(tramsmeet_data_buffer); 				// Meassure T, H and P
+	  	  meassure_battery_voltage(tramsmeet_data_buffer);  	// Meassure voltage on battery
+	  	  read_time_internal_RTC(tramsmeet_data_buffer);
 
 #if UART_LOG == ON
-// 	  char buf_uart_tx[70] = {0,};
  	  memset(buf_uart_tx, 0, sizeof(buf_uart_tx));
  	  sprintf(buf_uart_tx, "TX data: %s \n\r", tramsmeet_data_buffer);
  	  HAL_UART_Transmit(&huart1, buf_uart_tx, sizeof(buf_uart_tx), 1000);
 #endif
 
+ 	  	  char buf1[10] = {0,};
+		  char buf2[54] = {0,};
 
+		  uint8_t retr_packages = 0;
+		  uint8_t dt = 0 ;
+		  uint16_t lost_packages = 0;
 
+		  char buf_1[10] = {0,};
+		  uint32_t RTC_DATA = ReadBackupRegister(COUNTER_PACKET);
+		  memset(buf_1, 0, sizeof(buf_1));
+		  sprintf(buf_1, "C%d", RTC_DATA);
+		  strcat(tramsmeet_data_buffer, buf_1);
 
-// 	  Запи�?увати кількі�?ть передач в окремі функції
+		  NRF24_init_TX(0, 10, 0, 15, 0, 0);
+		  dt = NRF24L01_Transmit(1, tramsmeet_data_buffer);
 
-	  char buf1[10] = {0,};
-	  char buf2[54] = {0,};
-
-	  uint8_t retr_packages = 0;
-	  uint8_t dt = 0 ;
- 	  uint16_t lost_packages = 0;
-
-
-// 	  ПУТ�?�?И�?�? З ЦИМИ ЗМІ�?�?�?МИ !!!! їх треба розділити
-//	  RTC ЖОХУЯ БЕРЕ живленн�? на �?ебе
- 	  char buf_1[10] = {0,};
- 	  uint32_t RTC_DATA = ReadBackupRegister(COUNTER_PACKET);
- 	  memset(buf_1, 0, sizeof(buf_1));
- 	  sprintf(buf_1, "C%d", RTC_DATA);
- 	  strcat(tramsmeet_data_buffer, buf_1);
-
-
- 	  NRF24_init_TX(0, 10, 0, 15, 0, 0);
- 	  dt = NRF24L01_Transmit(1, tramsmeet_data_buffer);
-
- 	  retr_packages  = dt & 0xF;			// Select retransmit packets
- 	  lost_packages = dt & 0xF0;			// Select lost packets
-
+		  retr_packages  = dt & 0xF;			// Select retransmit packets
+		  lost_packages = dt & 0xF0;			// Select lost packets
 
 
 #if UART_LOG == ON
@@ -554,43 +502,32 @@ int main(void)
  	  HAL_UART_Transmit(&huart1, buf2, sizeof(buf2), 1000);
 #endif
 
- 	  WriteBackupRegister(RTC_DATA+1, COUNTER_PACKET);
+		  WriteBackupRegister(RTC_DATA+1, COUNTER_PACKET);
 
- 	  if(lost_packages > 0)		// If lost packages was detected
- 	  {
- 		 RED_LED_ON;
- 		 HAL_Delay(10);
- 		 RED_LED_OFF;
-// 		 HAL_UART_Transmit(&huart1, str, sizeof(str), 1000);
- 	  }
- 	  else
- 	  {
- 		 RED_LED_OFF;
- 	  }
+		  if(lost_packages > 0)		// If lost packages was detected
+		  {
+			  RED_LED_ON;
+			  HAL_Delay(10);
+			  RED_LED_OFF;
+		  }
+		  else
+		  {
+			  RED_LED_OFF;
+		  }
 
 #if LED == ON
  	  GREEN_LED_OFF;
 #endif
-
- 	  NRF24_Sleep_mode();
-
-
+ 	  	  NRF24_Sleep_mode();
  	  	  uint32_t ffff = 0;
  		  WriteBackupRegister(ffff, COUNTER_SECOND);
 	  }
-
-
 	  else
 	  {
-		  WriteBackupRegister(seconds+1, COUNTER_SECOND);		// Update counter of seconds
+		  WriteBackupRegister(period+1, COUNTER_SECOND);		// Update counter of seconds
 	  }
-
-
-
-
  	  /** Disable the WWAKEUP PIN **/
  	  HAL_PWR_DisableWakeUpPin(PWR_WAKEUP_PIN1);  // disable PA0
-
  	  /** Deactivate the RTC wakeup  **/
  	  HAL_RTCEx_DeactivateWakeUpTimer(&hrtc);
    }
@@ -629,14 +566,7 @@ int main(void)
   while (1)
   {
 
-	  //////////////////// TX ///////////////////////
-//	  NRF24L01_Transmit(1, "1234567890");
-//	  HAL_Delay(1000);
-	  ///////////////////////////////////////////////
 
-	  //////////////////// RX ///////////////////////
-//	   NRF24L01_Receive();
-	  ///////////////////////////////////////////////
 
     /* USER CODE END WHILE */
 
@@ -818,9 +748,9 @@ static void MX_RTC_Init(void)
 
   /** Initialize RTC and set the Time and Date
   */
-  sTime.Hours = 0x0;
-  sTime.Minutes = 0x0;
-  sTime.Seconds = 0x0;
+  sTime.Hours = 0x01;
+  sTime.Minutes = 0x02;
+  sTime.Seconds = 0x03;
   sTime.DayLightSaving = RTC_DAYLIGHTSAVING_NONE;
   sTime.StoreOperation = RTC_STOREOPERATION_RESET;
   if (HAL_RTC_SetTime(&hrtc, &sTime, RTC_FORMAT_BCD) != HAL_OK)
@@ -829,8 +759,8 @@ static void MX_RTC_Init(void)
   }
   sDate.WeekDay = RTC_WEEKDAY_MONDAY;
   sDate.Month = RTC_MONTH_JANUARY;
-  sDate.Date = 0x1;
-  sDate.Year = 0x0;
+  sDate.Date = 0x17;
+  sDate.Year = 0x24;
 
   if (HAL_RTC_SetDate(&hrtc, &sDate, RTC_FORMAT_BCD) != HAL_OK)
   {
