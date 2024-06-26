@@ -1,0 +1,2 @@
+../Core/Src/RTC_DATA/rtc_data_write_read.c:19:6:WriteBackupRegister	3
+../Core/Src/RTC_DATA/rtc_data_write_read.c:27:10:ReadBackupRegister	3

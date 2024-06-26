@@ -1,0 +1,2 @@
+../Core/Src/INTERNAL_RTC_TIME/internal_rtc_time.c:20:6:read_time_internal_RTC	1
+../Core/Src/INTERNAL_RTC_TIME/internal_rtc_time.c:38:6:set_time_internal_RTC	3

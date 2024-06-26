@@ -5,13 +5,16 @@
 
 # Add inputs and outputs from these tool invocations to the build variables 
 C_SRCS += \
-../Core/Src/DS3231/ds3231.c 
+../Core/Src/DS3231/ds3231.c \
+../Core/Src/DS3231/main_ds3231.c 
 
 OBJS += \
-./Core/Src/DS3231/ds3231.o 
+./Core/Src/DS3231/ds3231.o \
+./Core/Src/DS3231/main_ds3231.o 
 
 C_DEPS += \
-./Core/Src/DS3231/ds3231.d 
+./Core/Src/DS3231/ds3231.d \
+./Core/Src/DS3231/main_ds3231.d 
 
 
 # Each subdirectory must supply rules for building sources it contributes
@@ -21,7 +24,7 @@ Core/Src/DS3231/%.o Core/Src/DS3231/%.su Core/Src/DS3231/%.cyclo: ../Core/Src/DS
 clean: clean-Core-2f-Src-2f-DS3231
 
 clean-Core-2f-Src-2f-DS3231:
-	-$(RM) ./Core/Src/DS3231/ds3231.cyclo ./Core/Src/DS3231/ds3231.d ./Core/Src/DS3231/ds3231.o ./Core/Src/DS3231/ds3231.su
+	-$(RM) ./Core/Src/DS3231/ds3231.cyclo ./Core/Src/DS3231/ds3231.d ./Core/Src/DS3231/ds3231.o ./Core/Src/DS3231/ds3231.su ./Core/Src/DS3231/main_ds3231.cyclo ./Core/Src/DS3231/main_ds3231.d ./Core/Src/DS3231/main_ds3231.o ./Core/Src/DS3231/main_ds3231.su
 
 .PHONY: clean-Core-2f-Src-2f-DS3231
 

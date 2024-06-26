@@ -1,0 +1,5 @@
+../Core/Src/BME280/main_bme280.c:28:8:user_i2c_read	24	static
+../Core/Src/BME280/main_bme280.c:36:6:user_delay_ms	16	static
+../Core/Src/BME280/main_bme280.c:41:8:user_i2c_write	32	static
+../Core/Src/BME280/main_bme280.c:54:6:init_bme280_	40	static
+../Core/Src/BME280/main_bme280.c:89:6:get_THP_bme280	40	static

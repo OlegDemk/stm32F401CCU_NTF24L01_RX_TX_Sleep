@@ -36,6 +36,30 @@ extern "C" {
 
 /* Exported types ------------------------------------------------------------*/
 /* USER CODE BEGIN ET */
+#define ON 1
+#define OFF 0
+
+#define NUM_OF_TX 1				// Number from 1 to 6
+#define SLEEP_MODE ON			// ON or OFF sleep mode
+
+// Turn OFF for better power consumption
+#define UART_LOG OFF
+#define LED OFF
+
+// Available transmit period
+#define SLEEP_TIME_10_SEC 1
+#define SLEEP_TIME_30_SEC 5
+#define SLEEP_TIME_1_MIN 12
+
+#define SLEEP_TIME SLEEP_TIME_1_MIN		// Set transmit period
+
+#define RED_LED_ON HAL_GPIO_WritePin(GPIOB, LED_Red_Pin, GPIO_PIN_SET)
+#define RED_LED_OFF HAL_GPIO_WritePin(GPIOB, LED_Red_Pin, GPIO_PIN_RESET)
+#define RED_LED_TOGLE HAL_GPIO_TogglePin(GPIOB, LED_Red_Pin)
+
+#define GREEN_LED_ON HAL_GPIO_WritePin(GPIOB, LED_Green_Pin, GPIO_PIN_SET)
+#define GREEN_LED_OFF HAL_GPIO_WritePin(GPIOB, LED_Green_Pin, GPIO_PIN_RESET)
+#define GREEN_LED_TOGLE HAL_GPIO_TogglePin(GPIOB, LED_Green_Pin)
 
 /* USER CODE END ET */
 

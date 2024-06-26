@@ -27,8 +27,6 @@ extern UART_HandleTypeDef huart1;
 
 uint8_t RX_BUF[TX_PLOAD_WIDTH] = {0};
 
-#define NUM_OF_TX 1
-
 #if NUM_OF_TX == 1
 	uint8_t TX_ADDRESS[TX_ADR_WIDTH] = {0xb2,0xb4,0x01};		// TX 1
 #endif
@@ -36,12 +34,10 @@ uint8_t RX_BUF[TX_PLOAD_WIDTH] = {0};
 #if NUM_OF_TX == 2
 	uint8_t TX_ADDRESS[TX_ADR_WIDTH] = {0xb7,0xb5,0xa1};		// TX 2
 #endif
-//uint8_t TX_ADDRESS[TX_ADR_WIDTH] = {0xb7,0xb5,0xa1};		// TX 2
-//uint8_t TX_ADDRESS_1[TX_ADR_WIDTH] = {0xb7,0xb5,0xa1};
-//uint8_t TX_ADDRESS_2[TX_ADR_WIDTH] = {0xb6,0xb5,0xa1};
-//uint8_t TX_ADDRESS_3[TX_ADR_WIDTH] = {0xb5,0xb5,0xa1};
-//uint8_t TX_ADDRESS_4[TX_ADR_WIDTH] = {0xb4,0xb5,0xa1};
-//uint8_t TX_ADDRESS_5[TX_ADR_WIDTH] = {0xb3,0xb5,0xa1};
+
+#if NUM_OF_TX == 3
+	uint8_t TX_ADDRESS[TX_ADR_WIDTH] = {0xb6,0xb5,0xa1};		// TX 2
+#endif
 
 
 uint8_t NRF24_ReadReg(uint8_t addr);
@@ -68,8 +64,6 @@ void NRF24_Sleep_mode(void)
 	HAL_Delay(5);
 	NRF24_WriteReg(CONFIG, 0x00);
 	HAL_Delay(5);
-
-
 }
 // -------------------------------------------------------------------------------------
 void NRF24_init_RX(uint8_t zero_pipe, uint8_t first_pipe, uint8_t second_pipe,
@@ -153,11 +147,15 @@ void NRF24_init_TX(uint8_t pipe, uint8_t chanel, uint8_t retrans_delay, uint8_t 
 //	uint8_t SETUP_RETR_data = (retrans_delay << 4) | (retransmit_attempt);
 //	NRF24_WriteReg(SETUP_RETR, SETUP_RETR_data);		// 1500us, 15 retrans           0x7F
 #if NUM_OF_TX == 1
-	NRF24_WriteReg(SETUP_RETR, 0xFF);			// 1750 us, 15 retrans
+	NRF24_WriteReg(SETUP_RETR, 0xFF);			// 4000 us, 15 retrans
 #endif
 
 #if NUM_OF_TX == 2
-	NRF24_WriteReg(SETUP_RETR, 0x6F);			// 1750 us, 15 retrans
+	NRF24_WriteReg(SETUP_RETR, 0x3F);			// 1000 us, 15 retrans
+#endif
+
+#if NUM_OF_TX == 3
+	NRF24_WriteReg(SETUP_RETR, 0x2F);			// 750 us, 15 retrans
 #endif
 
 	NRF24_ToggleFeatures();
@@ -460,8 +458,6 @@ void NRF24L01_Receive(void)
 	    print_Data_Ower_uart(RX_BUF, &pipe);
 	}
 }
-// -------------------------------------------------------------------------------------
-
 // -------------------------------------------------------------------------------------
 void print_Data_Ower_uart(uint8_t *RX_BUF, uint8_t *pipe)
 {

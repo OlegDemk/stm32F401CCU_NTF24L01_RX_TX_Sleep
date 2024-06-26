@@ -5,13 +5,16 @@
 
 # Add inputs and outputs from these tool invocations to the build variables 
 C_SRCS += \
-../Core/Src/BME280/bme280.c 
+../Core/Src/BME280/bme280.c \
+../Core/Src/BME280/main_bme280.c 
 
 OBJS += \
-./Core/Src/BME280/bme280.o 
+./Core/Src/BME280/bme280.o \
+./Core/Src/BME280/main_bme280.o 
 
 C_DEPS += \
-./Core/Src/BME280/bme280.d 
+./Core/Src/BME280/bme280.d \
+./Core/Src/BME280/main_bme280.d 
 
 
 # Each subdirectory must supply rules for building sources it contributes
@@ -21,7 +24,7 @@ Core/Src/BME280/%.o Core/Src/BME280/%.su Core/Src/BME280/%.cyclo: ../Core/Src/BM
 clean: clean-Core-2f-Src-2f-BME280
 
 clean-Core-2f-Src-2f-BME280:
-	-$(RM) ./Core/Src/BME280/bme280.cyclo ./Core/Src/BME280/bme280.d ./Core/Src/BME280/bme280.o ./Core/Src/BME280/bme280.su
+	-$(RM) ./Core/Src/BME280/bme280.cyclo ./Core/Src/BME280/bme280.d ./Core/Src/BME280/bme280.o ./Core/Src/BME280/bme280.su ./Core/Src/BME280/main_bme280.cyclo ./Core/Src/BME280/main_bme280.d ./Core/Src/BME280/main_bme280.o ./Core/Src/BME280/main_bme280.su
 
 .PHONY: clean-Core-2f-Src-2f-BME280
 

@@ -1,0 +1,2 @@
+../Core/Src/RTC_DATA/rtc_data_write_read.c:19:6:WriteBackupRegister	16	static
+../Core/Src/RTC_DATA/rtc_data_write_read.c:27:10:ReadBackupRegister	16	static

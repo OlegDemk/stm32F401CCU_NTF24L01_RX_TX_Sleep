@@ -1,0 +1,2 @@
+../Core/Src/LEDs/leds.c:16:6:led_test_blink	24	static
+../Core/Src/LEDs/leds.c:29:6:error_blink_red_led	8	static

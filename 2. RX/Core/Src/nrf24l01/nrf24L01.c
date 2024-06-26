@@ -25,9 +25,12 @@ extern SPI_HandleTypeDef hspi2;
 extern UART_HandleTypeDef huart1;
 //extern osMessageQueueId_t DATAQueueHandle;
 
+uint8_t pipe_num = 0;
+
 uint8_t RX_BUF[TX_PLOAD_WIDTH] = {0};
 uint8_t TX_ADDRESS_0[TX_ADR_WIDTH] = {0xb2,0xb4,0x01};
 uint8_t TX_ADDRESS_1[TX_ADR_WIDTH] = {0xb7,0xb5,0xa1};
+#define TX_ADDRESS_2 0xb6
 //uint8_t TX_ADDRESS_2[TX_ADR_WIDTH] = {0xb6,0xb5,0xa1};
 //uint8_t TX_ADDRESS_3[TX_ADR_WIDTH] = {0xb5,0xb5,0xa1};
 //uint8_t TX_ADDRESS_4[TX_ADR_WIDTH] = {0xb4,0xb5,0xa1};
@@ -85,44 +88,30 @@ void NRF24_init_RX(uint8_t zero_pipe, uint8_t first_pipe, uint8_t second_pipe,
 	 	 uint8_t rx_pipes = (zero_pipe ) | (first_pipe << 1) | (second_pipe << 2) |
 	 			(third_pipe << 3) | (fourth_pipe << 4) | (fifth_pipe << 5);
 
-	 NRF24_WriteReg(EN_AA, 0x03); 			// Enable pipe0, pipe1 and pipe2
-	 NRF24_WriteReg(EN_RXADDR, 0x03); 		// Enable pipe0, pipe1 and pipe2				// включає канал
+	 NRF24_WriteReg(EN_AA, 0x07); 				// Enable pipe0, pipe1 and pipe2
+	 NRF24_WriteReg(EN_RXADDR, 0x07); 			// Enable pipe0, pipe1 and pipe2				// включає канал
 	 NRF24_WriteReg(SETUP_AW, 0x01); 			// Setup address width=3 bytes
 	 NRF24_WriteReg(SETUP_RETR, 0x5F);			// 1500us, 15 retrans
 
 	 NRF24_ToggleFeatures();
 
-	 NRF24_WriteReg(FEATURE, 0);			// динамічна довжина пакетів
-	 NRF24_WriteReg(DYNPD, 0);				// Вказує які канали використовують динамічну зміну пакетів
-	 NRF24_WriteReg(STATUSS, 0x70);			// Reset flags for IRQ when data arrived
-	 NRF24_WriteReg(RF_CH, 76); 			// 2476 MHz   2400 + 76
+	 NRF24_WriteReg(FEATURE, 0);				// динамічна довжина пакетів
+	 NRF24_WriteReg(DYNPD, 0);					// Вказує які канали використовують динамічну зміну пакетів
+	 NRF24_WriteReg(STATUSS, 0x70);				// Reset flags for IRQ when data arrived
+	 NRF24_WriteReg(RF_CH, 76); 				// 2476 MHz   2400 + 76
 
 	 NRF24_WriteReg(RF_SETUP, 0x06);  		//TX_PWR:0dBm, Datarate:1Mbps
 //	 NRF24_WriteReg(RF_SETUP, data_rate|output_tx_power);  		// TX_PWR:0dBm, Datarate: 250kbp	- New version
 
 	 NRF24_Write_Buf(TX_ADDR, TX_ADDRESS_0, TX_ADR_WIDTH);
+
 	 NRF24_Write_Buf(RX_ADDR_P0, TX_ADDRESS_0, TX_ADR_WIDTH);
 	 NRF24_Write_Buf(RX_ADDR_P1, TX_ADDRESS_1, TX_ADR_WIDTH);
+	 NRF24_WriteReg(RX_ADDR_P2, TX_ADDRESS_2);
 
 	 NRF24_WriteReg(RX_PW_P0, TX_PLOAD_WIDTH); 	//Number of bytes in RX payload in data pipe 0
 	 NRF24_WriteReg(RX_PW_P1, TX_PLOAD_WIDTH); 	//Number of bytes in RX payload in data pipe 1
-
-
-//	 NRF24_Write_Buf(RX_ADDR_P1, TX_ADDRESS_0, TX_ADR_WIDTH);											// Write TX address
-//
-////	 NRF24_Write_Buf(RX_ADDR_P0, TX_ADDRESS, TX_ADR_WIDTH);											// Write RX address Pipe 0
-////	 NRF24_Write_Buf(RX_ADDR_P1, TX_ADDRESS_1, TX_ADR_WIDTH);
-////	 NRF24_Write_Buf(RX_ADDR_P2, TX_ADDRESS_2, 1);
-////	 NRF24_Write_Buf(RX_ADDR_P3, TX_ADDRESS_3, 1);
-////	 NRF24_Write_Buf(RX_ADDR_P4, TX_ADDRESS_4, 1);
-////	 NRF24_Write_Buf(RX_ADDR_P5, TX_ADDRESS_5, 1);
-//
-////	 NRF24_WriteReg(RX_PW_P0, TX_PLOAD_WIDTH);
-//	 NRF24_WriteReg(RX_PW_P1, TX_PLOAD_WIDTH);	 													// Number of bytes in RX payload in data pipe 0
-////	 NRF24_WriteReg(RX_PW_P2, TX_PLOAD_WIDTH);
-////	 NRF24_WriteReg(RX_PW_P3, TX_PLOAD_WIDTH);
-////	 NRF24_WriteReg(RX_PW_P4, TX_PLOAD_WIDTH);
-////	 NRF24_WriteReg(RX_PW_P5, TX_PLOAD_WIDTH);
+	 NRF24_WriteReg(RX_PW_P2, TX_PLOAD_WIDTH); 	//Number of bytes in RX payload in data pipe 2
 
 	 NRF24L01_RX_Mode();
 	 LED_OFF;
@@ -424,20 +413,13 @@ void IRQ_Callback(void)
 	{
 		pipe = (status>>1)&0x07;
 
-
-		/////////////////////////////////////	BED IDEA !!!
-		char buff_uart[20] = {0};
-		sprintf(buff_uart, "PIPE: %d:", pipe);
-		HAL_UART_Transmit(&huart1, (char*)buff_uart, sizeof(buff_uart), 1000);
-		/////////////////////////////////////
-
+		pipe_num = pipe;
 
 		NRF24_Read_Buf(RD_RX_PLOAD, RX_BUF, TX_PLOAD_WIDTH);		// Copy into buffer
 		NRF24_WriteReg(STATUSS, 0x40);
 
 		rx_flag = 1;
 	}
-
 	LED_OFF;
 }
 // -------------------------------------------------------------------------------------
@@ -445,7 +427,7 @@ void print_Data_Ower_uart(uint8_t *RX_BUF, uint8_t *pipe)
 {
 	char buff_uart[90] = {0};
 
-	sprintf(buff_uart, "DATA: %s\n\r", RX_BUF);
+	sprintf(buff_uart, "Data from PIPE %d: %s\n\r", pipe_num, RX_BUF);
 	HAL_UART_Transmit(&huart1, (char*)buff_uart, sizeof(buff_uart), 1000);
 }
 // -------------------------------------------------------------------------------------

@@ -34,7 +34,12 @@ Core/Src/main.o: ../Core/Src/main.c ../Core/Inc/main.h \
  ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_spi.h \
  ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_uart.h \
  ../Core/Inc/BME280/bme280_defs.h ../Core/Inc/BME280/bme280.h \
- ../Core/Inc/nrf24L01/nrf24L01.h ../Core/Inc/DS3231/ds3231.h
+ ../Core/Inc/nrf24L01/nrf24L01.h ../Core/Inc/DS3231/ds3231.h \
+ ../Core/Inc/BME280/main_bme280.h \
+ ../Core/Inc/BATTERY_VOLTAGE/adc_voltage.h \
+ ../Core/Inc/RTC_DATA/rtc_data_write_read.h ../Core/Inc/LEDs/leds.h \
+ ../Core/Inc/DS3231/main_ds3231.h \
+ ../Core/Inc/INTERNAL_RTC_TIME/internal_rtc_time.h
 ../Core/Inc/main.h:
 ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal.h:
 ../Core/Inc/stm32f4xx_hal_conf.h:
@@ -74,3 +79,9 @@ Core/Src/main.o: ../Core/Src/main.c ../Core/Inc/main.h \
 ../Core/Inc/BME280/bme280.h:
 ../Core/Inc/nrf24L01/nrf24L01.h:
 ../Core/Inc/DS3231/ds3231.h:
+../Core/Inc/BME280/main_bme280.h:
+../Core/Inc/BATTERY_VOLTAGE/adc_voltage.h:
+../Core/Inc/RTC_DATA/rtc_data_write_read.h:
+../Core/Inc/LEDs/leds.h:
+../Core/Inc/DS3231/main_ds3231.h:
+../Core/Inc/INTERNAL_RTC_TIME/internal_rtc_time.h:

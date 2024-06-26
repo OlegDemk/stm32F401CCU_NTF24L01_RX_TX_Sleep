@@ -22,8 +22,12 @@ C_DEPS :=
 
 # Every subdirectory with source files must be described here
 SUBDIRS := \
+Core/Src/BATTERY_VOLTAGE \
 Core/Src/BME280 \
 Core/Src/DS3231 \
+Core/Src/INTERNAL_RTC_TIME \
+Core/Src/LEDs \
+Core/Src/RTC_DATA \
 Core/Src \
 Core/Src/nrf24l01 \
 Core/Startup \
