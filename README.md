@@ -1,4 +1,4 @@
-The project base on STM32F401CCU microcontroller and NRF24L01 radion module. Project was create on STM32 Cube IDE. 
+The project base on STM32F401CCU microcontroller and NRF24L01 radio module. Project was create on STM32 Cube IDE. 
 The RX project: TR all time listen TX modules(up to 6), mark from witch PIPE was(from what TX module data transmeeted), and transmeet reseived data into UART. 
 
 The TX project: Transmeet this data: (32 bytes/one packet)
